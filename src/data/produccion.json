@@ -1,0 +1,61 @@
+[
+  {
+    "id": 1,
+    "fecha": "2025-01-10",
+    "producto_id": 1,
+    "producto_nombre": "Mayonesa Galon",
+    "cantidad": 5,
+    "materias_primas": [
+      {"materia_prima_id": 1, "nombre": "Madera de Roble", "cantidad_usada": 25, "costo": 637.5},
+      {"materia_prima_id": 2, "nombre": "Tornillos", "cantidad_usada": 2, "costo": 6.4}
+    ],
+    "costo_total": 643.9
+  },
+  {
+    "id": 2,
+    "fecha": "2025-01-12",
+    "producto_id": 2,
+    "producto_nombre": "Mostaza",
+    "cantidad": 10,
+    "materias_primas": [
+      {"materia_prima_id": 1, "nombre": "Madera de Roble", "cantidad_usada": 15, "costo": 382.5},
+      {"materia_prima_id": 2, "nombre": "Tornillos", "cantidad_usada": 1, "costo": 3.2}
+    ],
+    "costo_total": 385.7
+  },
+  {
+    "id": 3,
+    "fecha": "2025-02-01",
+    "producto_id": 3,
+    "producto_nombre": "Salsa Maiz",
+    "cantidad": 15,
+    "materias_primas": [
+      {"materia_prima_id": 5, "nombre": "Cable Eléctrico", "cantidad_usada": 30, "costo": 69},
+      {"materia_prima_id": 3, "nombre": "Pintura Blanca", "cantidad_usada": 3, "costo": 36}
+    ],
+    "costo_total": 105
+  },
+  {
+    "id": 4,
+    "fecha": "2025-02-15",
+    "producto_id": 4,
+    "producto_nombre": "Tartara",
+    "cantidad": 8,
+    "materias_primas": [
+      {"materia_prima_id": 1, "nombre": "Madera de Roble", "cantidad_usada": 20, "costo": 510},
+      {"materia_prima_id": 2, "nombre": "Tornillos", "cantidad_usada": 1.5, "costo": 4.8}
+    ],
+    "costo_total": 514.8
+  },
+  {
+    "id": 5,
+    "fecha": "2025-07-24",
+    "producto_id": 5,
+    "producto_nombre": "Barbecue",
+    "cantidad": 20,
+    "materias_primas": [
+      {"materia_prima_id": 4, "nombre": "Tela de Algodón", "cantidad_usada": 40, "costo": 340}
+    ],
+    "costo_total": 340
+  }
+]

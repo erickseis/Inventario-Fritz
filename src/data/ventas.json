@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1,
+    "fecha": "2025-07-01",
+    "producto_id": 1,
+    "producto_nombre": "ADEREZO MOSTAZA MIEL (12*250GR)",
+    "cantidad_vendida": 8,
+    "precio_unitario": 18.5,
+    "total": 148.0
+  },
+  {
+    "id": 2,
+    "fecha": "2025-07-02",
+    "producto_id": 2,
+    "producto_nombre": "ADEREZO MOSTAZA MIEL 250GR",
+    "cantidad_vendida": 25,
+    "precio_unitario": 2.1,
+    "total": 52.5
+  },
+  {
+    "id": 3,
+    "fecha": "2025-07-03",
+    "producto_id": 3,
+    "producto_nombre": "ADEREZO SABOR A MAIZ (12*235GR)",
+    "cantidad_vendida": 5,
+    "precio_unitario": 17.8,
+    "total": 89.0
+  },
+  {
+    "id": 4,
+    "fecha": "2025-07-04",
+    "producto_id": 4,
+    "producto_nombre": "ADEREZO SABOR A MAIZ (235GR)",
+    "cantidad_vendida": 60,
+    "precio_unitario": 1.95,
+    "total": 117.0
+  },
+  {
+    "id": 5,
+    "fecha": "2025-07-05",
+    "producto_id": 5,
+    "producto_nombre": "ADEREZO SABOR A MAIZ GALON (4*3200GR)",
+    "cantidad_vendida": 2,
+    "precio_unitario": 65.0,
+    "total": 130.0
+  }
+]
