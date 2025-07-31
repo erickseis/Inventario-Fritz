@@ -24,7 +24,7 @@ const Header = () => {
   const getPageTitle = () => {
     const titles = {
       '/': 'Dashboard',
-      '/productos': 'Productos',
+      '/productos': 'Gestion de Productos',
       '/inventario': 'Inventario',
       '/movimientos': 'Movimientos',
       '/proveedores': 'Proveedores'

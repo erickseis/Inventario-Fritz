@@ -3,7 +3,7 @@ import { useData } from '../hooks/useData';
 import MetricCard from '../components/MetricCard';
 import SalesChart from '../components/SalesChart';
 import ProductionChart from '../components/ProductionChart';
-import { obtenerInventario } from '../service/connection';
+import { obtenerInventario, obtenerStockMin } from '../service/connection';
 
 const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -18,21 +18,32 @@ const Dashboard = () => {
   const [filteredProduccion, setFilteredProduccion] = useState([]);
 // data inventario
 const [dataInventario, setDataInventario] = useState([]);
+const [dataStockMinimo, setDataStockMinimo] = useState([]);
 
-const fetchDataInventario =async()=>{
+const fetchDataInventario = async () => {
   try {
-    const data = await obtenerInventario()
-    setDataInventario(data)
-    setIsLoading(false)
+    const data = await obtenerInventario();
+    setDataInventario(data);
+    setIsLoading(false);
   } catch (error) {
-    console.error("Error al obtener la data del servidor", error)
-    setIsLoading(false)
+    console.error("Error al obtener la data del servidor", error);
+    setIsLoading(false);
   }
-}
+};
 
-useEffect(()=>{
-  fetchDataInventario()
-},[])
+const fetchStockMinimo = async () => {
+  try {
+    const data = await obtenerStockMin();
+    setDataStockMinimo(data);
+  } catch (error) {
+    console.error("Error al obtener stock mínimo", error);
+  }
+};
+
+useEffect(() => {
+  fetchDataInventario();
+  fetchStockMinimo();
+}, [])
 const almacenes = [
   {co_alma: "7020", nombre: "Barquisimeto principal"},
   {co_alma: "8010", nombre: "Maracaibo (Occidente)"},
@@ -40,10 +51,13 @@ const almacenes = [
   {co_alma: "8070", nombre: "Santa Cruz (Estado Aragua Centro)"},
   {co_alma: "8090", nombre: "Prueba Piloto Capital"}
 ]
-//ejemplo stock minimo
-const stockMin =[ 
-  {stock_min: "10",co_alma: "8090"}
-]
+// Función helper para obtener stock mínimo desde dataStockMinimo
+const getStockMinimo = (co_art) => {
+  const stockMinData = dataStockMinimo.find(item => 
+    String(item.co_art).trim() === String(co_art)?.trim()
+  );
+  return stockMinData ? stockMinData.stock_min : null;
+};
 // Función para filtrar productos por almacenes específicos
 const filtrarProductosPorAlmacen = (data = dataInventario) => {
   const codigosAlmacen = selectedLocation === 'all' ?
@@ -57,14 +71,22 @@ const filtrarProductosPorAlmacen = (data = dataInventario) => {
 // Obtener productos filtrados
 const cantidadTotaldeProductos = filtrarProductosPorAlmacen().length;
 
-const stockTotaldeProductosDisponible = filtrarProductosPorAlmacen().filter(producto => producto.stock_act - producto.stock_com > 0).length;
-// 
-// 
-// configurar stock minimo para obtener el stock bajo
-const stockTotaldeProductosBajo = filtrarProductosPorAlmacen().filter(producto => producto.stock_act - producto.stock_com > 0 && producto.stock_act - producto.stock_com <= stockMin.map(stock => stock.stock_min)).length;
-// console.log('Total productos Bajos:', stockTotaldeProductosBajo);
+const stockTotaldeProductosDisponible = filtrarProductosPorAlmacen().filter(producto => {
+  const stockDisponible = (producto.stock_act || 0) - (producto.stock_com || 0);
+  return stockDisponible > 0;
+}).length;
 
-const sinStockDeProductos = filtrarProductosPorAlmacen().filter(producto => producto.stock_act === 0 || producto.stock_act - producto.stock_com === 0).length;
+// configurar stock minimo para obtener el stock bajo
+const stockTotaldeProductosBajo = filtrarProductosPorAlmacen().filter(producto => {
+  const stockDisponible = (producto.stock_act || 0) - (producto.stock_com || 0);
+  const stockMinimoReal = getStockMinimo(producto?.co_art) || 0;
+  return stockDisponible > 0 && stockDisponible <= stockMinimoReal;
+}).length;
+
+const sinStockDeProductos = filtrarProductosPorAlmacen().filter(producto => {
+  const stockDisponible = (producto.stock_act || 0) - (producto.stock_com || 0);
+  return stockDisponible === 0;
+}).length;
 // console.log('Total productos sin stock:', sinStockDeProductos);
 
 
@@ -111,7 +133,6 @@ if(isLoading){
   return (
     <div className="container-fluid ">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1 className="h3 mb-0">Dashboard de Inventario</h1>
         <span className="text-muted">{new Date().toLocaleDateString('es-ES', { 
           weekday: 'long', 
           year: 'numeric', 

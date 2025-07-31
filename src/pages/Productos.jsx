@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import FormModal from '../components/FormModal';
 import { obtenerInventario, obtenerStockMin } from '../service/connection';
+import { ModalObservacion } from '../components/ModalObservacion';
 
 const Productos = () => {
  const [isLoading, setIsLoading] = useState(true);
@@ -8,12 +9,20 @@ const Productos = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [selectedCategoria, setSelectedCategoria] = useState('');
   const [selectedEstado, setSelectedEstado] = useState('');
+  const [stockActualFilter, setStockActualFilter] = useState('');
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc', or ''
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 100;
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [dataProductosAlmacenes, setDataProductosAlmacenes] = useState([])
 const [dataStockMinimo, setDataStockMinimo] = useState([])
+const [showModalObservacion, setShowModalObservacion] = useState(false);
+const [observacion, setObservacion] = useState('');
+
+const handleShowModalObservacion = () => {
+  setShowModalObservacion(!showModalObservacion);
+};
   const almacenes = [
     {co_alma: "7020", nombre: "Barquisimeto principal"},
     {co_alma: "8010", nombre: "Maracaibo (Occidente)"},
@@ -62,6 +71,13 @@ const fetchStockMinimo = async()=>{
     return stockMinData ? stockMinData.stock_min : null;
   };
 
+  // Función para formatear números con separador de miles
+  const formatNumber = (value) => {
+    if (value === null || value === undefined || value === '') return '0';
+    const num = Math.floor(Number(value));
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
   const filtrarProductosPorAlmacen = (data = dataProductosAlmacenes) => {
     const codigosAlmacen = selectedLocation === 'all' ?
      almacenes.map(almacen => String(almacen.co_alma).trim())
@@ -76,10 +92,13 @@ const fetchStockMinimo = async()=>{
     { key: 'co_art', label: 'Código', sortable: true },
     { key: 'art_des', label: 'Descripción', sortable: true },
     { key: 'categoria_principal', label: 'Categoría', sortable: true },
-    { key: 'stock_act', label: 'Stock Actual', sortable: true, render: (value) => `${value} un` },
+    { key: 'stock_disponible', label: 'Stock Disponible', sortable: true, render: (value, producto) => {
+      const disponible = Number(producto.stock_act || 0) - Number(producto.stock_com || 0);
+      return `${formatNumber(disponible)} un`;
+    }},
     { key: 'stock_min', label: 'Stock Mínimo', sortable: true, render: (value, producto) => {
       const stockMin = getStockMinimo(producto?.co_art?.trim());
-      return stockMin !== null ? stockMin : (value || '0');
+      return stockMin !== null ? formatNumber(stockMin) : formatNumber(value || '0');
     }},
     { key: 'co_alma', label: 'Almacén', sortable: true, render: (value) => {
       if (!value) return 'Sin almacén';
@@ -98,7 +117,7 @@ const fetchStockMinimo = async()=>{
   ];
 
   const editFormFields = [
-    { name: 'co_art', label: 'Código Articulo', type: 'text', required: false },
+    { name: 'co_art', label: 'Código Articulo', type: 'text', required: false, disabled: true },
     { name: 'stock_min', label: 'Stock Mínimo', type: 'number', required: true },
     { name: 'observacion', label: 'Observación', type: 'text', required: false },
     // { name: 'art_des', label: 'Descripción', type: 'text', required: true }
@@ -117,6 +136,7 @@ const fetchStockMinimo = async()=>{
   const filteredProductos = filtrarProductosPorAlmacen().filter(producto => {
     const searchMatch = !searchTerm || 
       producto.art_des.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      producto.co_art.toLowerCase().includes(searchTerm.toLowerCase()) ||
       producto.categoria_principal.toLowerCase().includes(searchTerm.toLowerCase()) ||
       producto.des_sub?.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -141,11 +161,32 @@ const fetchStockMinimo = async()=>{
     return searchMatch && categoriaMatch && estadoMatch;
   });
 
+  // Ordenar productos por stock disponible (stock_act - stock_com)
+  const sortedProductos = [...filteredProductos].sort((a, b) => {
+    const stockDisponibleA = Number(a.stock_act || 0) - Number(a.stock_com || 0);
+    const stockDisponibleB = Number(b.stock_act || 0) - Number(b.stock_com || 0);
+    
+    if (sortOrder === 'asc') {
+      return stockDisponibleA - stockDisponibleB;
+    } else if (sortOrder === 'desc') {
+      return stockDisponibleB - stockDisponibleA;
+    }
+    return 0; // Sin ordenamiento
+  });
+
+  const toggleSortOrder = () => {
+    setSortOrder(prev => {
+      if (prev === '') return 'asc';
+      if (prev === 'asc') return 'desc';
+      return ''; // Volver a sin ordenamiento
+    });
+  };
+
   // Pagination
-  const totalPages = Math.ceil(filteredProductos.length / itemsPerPage);
+  const totalPages = Math.ceil(sortedProductos.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentProducts = filteredProductos.slice(startIndex, endIndex);
+  const currentProducts = sortedProductos.slice(startIndex, endIndex);
 
   const handleNextPage = () => {
     if (currentPage < totalPages) {
@@ -165,22 +206,20 @@ const fetchStockMinimo = async()=>{
 
   const categorias = [...new Set(dataProductosAlmacenes.map(p => p.categoria_principal))].sort();
 
-  if(isLoading || !dataStockMinimo || !dataProductosAlmacenes){
-    return (<div class="d-flex justify-content-center">
-      <div class="spinner-border" role="status">
+  if(isLoading || !dataProductosAlmacenes || dataProductosAlmacenes.length === 0){
+    return (<div className="d-flex justify-content-center">
+      <div className="spinner-border" role="status">
+        <span className="visually-hidden">Cargando...</span>
       </div>
     </div>)
   }
   
   return (
     <div className="container-fluid py-2">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1 className="h3 mb-0">Gestión de Productos</h1>
-    
-      </div>
+ 
 
       {/* Filtros */}
-      <div className="card mb-4">
+      <div className="d-flex justify-content-between align-items-center card mb-4">
         <div className="card-body">
           <div className="row g-3">
             <div className="col-md-4">
@@ -219,16 +258,19 @@ const fetchStockMinimo = async()=>{
                 <option value="sin-stock">Sin Stock</option>
               </select>
             </div>
+            <div className="col-md-4">
+              <label className="form-label">Ordenar por Stock</label>
+              <button 
+                type="button"
+                className="btn btn-outline-primary w-100"
+                onClick={toggleSortOrder}
+              >
+                {sortOrder === '' ? 'Sin ordenar' : 
+                 sortOrder === 'asc' ? 'Menor a Mayor 📈' : 'Mayor a Menor 📉'}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-       {/* Filtros por ubicación */}
-       <div className=" row mb-4">
-        <div className="col-12">
-          <div className="d-flex justify-content-between align-items-center card ">
-            <div className="card-header">
-              <h5 className="card-title mb-0">Filtrar por Ubicación</h5>
-            </div>
             <div className="card-body">
               <div className="btn-group" role="group" aria-label="Filtros de ubicación">
                 <button type="button" className={`btn btn-outline-primary ${selectedLocation === 'all' ? 'active' : ''}`} onClick={() => setSelectedLocation('all')}>
@@ -251,9 +293,18 @@ const fetchStockMinimo = async()=>{
                 </button>
               </div>
             </div>
+      </div>
+       {/* Filtros por ubicación */}
+       {/* <div className=" row mb-4">
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-center card ">
+            <div className="card-header">
+              <h5 className="card-title mb-0">Filtrar por Ubicación</h5>
+            </div>
+        
           </div>
         </div>
-      </div>
+      </div> */}
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="d-flex justify-content-between align-items-center mt-4">
@@ -323,7 +374,7 @@ const fetchStockMinimo = async()=>{
                     {columns.map(column => (
                       <td key={column.key}>
                         {column.render 
-                          ? column.render(producto[column.key]) 
+                          ? column.render(producto[column.key], producto) 
                           : producto[column.key]}
                       </td>
                     ))}
@@ -344,13 +395,28 @@ const fetchStockMinimo = async()=>{
                         );
                       })()}
                     </td>
-                    <td>
+                    <td className='d-flex flex-row'>
                       <button 
                       title='Cambiar Stock Minimo'
                         className="btn btn-sm btn-outline-primary me-1"
                         onClick={() => handleEdit(producto)}
                       >
                         <i className="bi bi-pencil"></i>
+                      </button>
+                      <button 
+                      title='Ver Observaciones'
+                        className="btn btn-sm btn-outline-secondary me-1"
+                        onClick={() => {
+                          const match = dataStockMinimo.find(item => item.co_art === producto.co_art);
+                          if (match) {
+                            setObservacion(match);
+                          } else {
+                            setObservacion(producto);
+                          }
+                          handleShowModalObservacion();
+                        }}
+                      >
+                        <i className="bi bi-eye"></i>
                       </button>
                      
                     </td>
@@ -421,6 +487,11 @@ const fetchStockMinimo = async()=>{
         title={editingItem ? `Editar Producto: ${editingItem.art_des}` : 'Nuevo Producto'}
         fields={editingItem ? editFormFields : formFields}
         initialData={editingItem}
+      />
+      <ModalObservacion 
+      show={showModalObservacion}
+      onClose={handleShowModalObservacion} 
+      data={observacion}
       />
     </div>
   );

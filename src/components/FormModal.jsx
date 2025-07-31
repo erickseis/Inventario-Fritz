@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { stockMinimo } from '../service/connection';
+import Swal from 'sweetalert2';
 
 const FormModal = ({ 
   show, 
@@ -51,10 +52,24 @@ const FormModal = ({
     fields.forEach(field => {
       if (field.required && !formData[field.name]) {
         newErrors[field.name] = `${field.label} es requerido`;
+        Swal.fire({
+          icon: 'error',
+          title: 'Oops...',
+          text: `${field.label} es requerido`,
+
+        });
+        return;
       }
       
       if (field.type === 'number' && formData[field.name] < 0) {
         newErrors[field.name] = `${field.label} debe ser mayor o igual a 0`;
+        Swal.fire({
+          icon: 'error',
+          title: 'Oops...',
+          text: `${field.label} debe ser mayor o igual a 0`,
+
+        });
+        return;
       }
     });
     
@@ -64,12 +79,24 @@ const FormModal = ({
   const onSubmit = async (data) => {
     try {
       const response = await stockMinimo(data);   // axios response object
-      console.log(response.data);                 // OK
+      console.log(response.data);     
+      Swal.fire({
+        icon: 'success',
+        title: 'Exito...',
+        text: 'Stock minimo actualizado',
+
+      });
+      fetchStockMinimo();            // OK
     } catch (error) {
       // Safely read server message OR generic error
       const msg = error.response?.data?.message || error.message || 'Error desconocido';
       console.error(msg);
-      alert(msg);   // o setErrors, toast, etc.
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: msg,
+
+      });
     }
   };
   const handleSubmit = (e) => {
@@ -77,7 +104,7 @@ const FormModal = ({
     
     if (validate()) {
       onSubmit(formData);
-      fetchStockMinimo();
+      
       onClose();
     }
   };
@@ -141,6 +168,7 @@ const FormModal = ({
                           required={field.required}
                           step={field.type === 'number' ? '0.01' : undefined}
                           min={field.type === 'number' ? 0 : undefined}
+                          disabled={field.disabled || false}
                         />
                       )}
                       
