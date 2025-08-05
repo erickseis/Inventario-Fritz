@@ -1,9 +1,31 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import logoFritz from '../assets/image/logo-fritz-web.png'
+// import { obtenerUsuarioLogueado } from '../service/connection';
+import { useUser } from '../hooks/useUser';
+import { obtenerCargos } from '../service/connection';
 
-const Sidebar = ({ isCollapsed, toggleSidebar }) => {
+const Sidebar = ({ isCollapsed, toggleSidebar, onLogout }) => {
   const location = useLocation();
+const [cargos, setCargos] = useState([]);
+
+async function fetchCargos() {
+  try {
+const response = await obtenerCargos();
+setCargos(response);
+  } catch (error) {
+    console.error('Error al obtener cargos:', error);
+  }
+}
+
+useEffect(() => {
+  fetchCargos();
+}, []);
+console.log("cargos",cargos)
+  const { user, loading, isAuthenticated } = useUser();
+
+  console.log('usuario logueado',user)
+ 
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: 'bi-speedometer2' },
@@ -16,10 +38,11 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     { path: '/configuracion', label: 'Configuración', icon: 'bi-gear' }
   ];
 
-
+  if (loading || !isAuthenticated) return <div>Cargando...</div>;
 
   return (
     <>
+    
       {/* Overlay para móviles */}
       {!isCollapsed && (
         <div 
@@ -98,7 +121,30 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
         >
           {!isCollapsed && (
             <div className="text-center">
-              <small>© 2025 Inventario Fritz</small>
+              <small> 2025 Inventario Fritz</small>
+            </div>
+          )}
+          {user && (
+            <div className="mt-auto p-3 border-top">
+              <div className="d-flex align-items-center">
+                <div className="flex-shrink-0">
+                  <i className="bi bi-person-circle fs-4 text-primary"></i>
+                </div>
+                {!isCollapsed && (
+                  <div className="flex-grow-1 ms-2">
+                    <div className="text-muted small">{user[0].nombre.charAt(0).toUpperCase() + user[0].nombre.slice(1).toLowerCase()}{" "}{user[0].apellido.charAt(0).toUpperCase() + user[0].apellido.slice(1).toLowerCase()}</div>
+                    <div className="text-muted small">{cargos?.filter((item)=> Number(item.id) === Number(user[0].cargo)).map((items)=> items.nombre_cargo)}</div>
+                  </div>
+                )}
+              </div>
+              <button 
+                onClick={onLogout}
+                className={`btn btn-outline-danger btn-sm w-100 mt-2 ${isCollapsed ? 'p-1' : ''}`}
+                title="Cerrar sesión"
+              >
+                <i className="bi bi-box-arrow-right"></i>
+                {!isCollapsed && <span className="ms-1">Cerrar sesión</span>}
+              </button>
             </div>
           )}
         </div>

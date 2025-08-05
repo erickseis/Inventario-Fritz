@@ -1,4 +1,86 @@
-import { api } from "./api";
+import api from "./api";
+// sesion usuario
+
+// export const registro = async (data) => {
+//   try {
+//     const response = await api.post("/login_inventario/register", data)
+//     return response.data
+//   } catch (error) { 
+//     console.error("error al registrarte", error)
+//   }
+// }
+
+// export const login = async (data) => {
+//   try {
+//     const response = await api.post("/login_inventario/login", data)
+//     return response.data
+//   } catch (error) {
+//     console.error("Error al obtener datos del servidor:", error.message);
+//   }
+// }
+export const obtenerUsuarioLogueado = async (id) => {
+  try {
+    const response = await api.get(`/users/inventario/${id}`)
+    return response.data
+  } catch (error) {
+    console.error("Error al obtener datos del servidor:", error.message);
+  }
+}
+//vendedores
+export const obtenerVendedores = async () => {
+  try {
+    const response = await api.get("/vendedor/todos")
+    return response.data
+  } catch (error) {
+    if (error.code === 'ECONNABORTED') {
+      console.error("Error: La conexión con el servidor tardó demasiado tiempo");
+    } else if (error.response?.status === 404) {
+      console.error("Error: El endpoint /vendedores no fue encontrado");
+    } else if (error.response?.status >= 500) {
+      console.error("Error: Problema en el servidor");
+    } else {
+      console.error("Error al obtener datos del servidor:", error.message);
+    }
+    return [];
+  }
+}
+// cargos
+export const obtenerCargos = async () => {
+  try {
+    const response = await api.get("/cargos")
+    return response.data
+  } catch (error) {
+    if (error.code === 'ECONNABORTED') {
+      console.error("Error: La conexión con el servidor tardó demasiado tiempo");
+    } else if (error.response?.status === 404) {
+      console.error("Error: El endpoint /cargos no fue encontrado");
+    } else if (error.response?.status >= 500) {
+      console.error("Error: Problema en el servidor");
+    } else {
+      console.error("Error al obtener datos del servidor:", error.message);
+    }
+    return [];
+  }
+}
+// departamentos
+export const obtenerDepartamentos = async () => {
+  try {
+    const response = await api.get("/departamentos")
+    return response.data
+  } catch (error) {
+    if (error.code === 'ECONNABORTED') {
+      console.error("Error: La conexión con el servidor tardó demasiado tiempo");
+    } else if (error.response?.status === 404) {
+      console.error("Error: El endpoint /departamentos no fue encontrado");
+    } else if (error.response?.status >= 500) {
+      console.error("Error: Problema en el servidor");
+    } else {
+      console.error("Error al obtener datos del servidor:", error.message);
+    }
+    return [];
+  }
+}
+// productos
 
 export const obtenerInventario = async () => {
   try {
