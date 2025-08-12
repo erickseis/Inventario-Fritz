@@ -1,11 +1,30 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useData } from '../hooks/useData';
 import MetricCard from '../components/MetricCard';
 import SalesChart from '../components/SalesChart';
 import ProductionChart from '../components/ProductionChart';
 import { obtenerInventario, obtenerStockMin } from '../service/connection';
+import { useUser } from '../hooks/useUser';
+
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const { user } = useUser();
+  
+  // Redirect role 3 users to inventario
+  useEffect(() => {
+    if (user) {
+      const u = Array.isArray(user) ? user[0] : user;
+      const roleValue = u?.rol ?? u?.cargo;
+      const numericRole = roleValue != null ? Number(roleValue) : undefined;
+      
+      if (numericRole === 3) {
+        navigate('/inventario', { replace: true });
+      }
+    }
+  }, [user, navigate]);
+
   const [isLoading, setIsLoading] = useState(true);
   const { data: productos } = useData('productos');
   const { data: ventas } = useData('ventas');
@@ -87,9 +106,6 @@ const sinStockDeProductos = filtrarProductosPorAlmacen().filter(producto => {
   const stockDisponible = (producto.stock_act || 0) - (producto.stock_com || 0);
   return stockDisponible === 0;
 }).length;
-// console.log('Total productos sin stock:', sinStockDeProductos);
-
-
 
 
 
@@ -122,37 +138,44 @@ const sinStockDeProductos = filtrarProductosPorAlmacen().filter(producto => {
   }).filter(p => p.estado !== 'Vigente' && p.dias_para_vencer <= 7)
     .sort((a, b) => a.dias_para_vencer - b.dias_para_vencer)
     .slice(0, 5);
-console.log("dataInventario",dataInventario)
-if(isLoading){
-  return (<div class="d-flex justify-content-center">
-    <div class="spinner-border" role="status">
+
+if( isLoading){
+  return (
+    <div className="d-flex justify-content-center align-items-center" style={{minHeight:'60vh'}}>
+      <div className="spinner-border text-primary" role="status">
+        <span className="visually-hidden">Cargando...</span>
+      </div>
     </div>
-  </div>)
+  )
 }
 
   return (
-    <div className="container-fluid ">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <span className="text-muted">{new Date().toLocaleDateString('es-ES', { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        })}</span>
+    <div className="container py-3">
+      <div className="card border-0 shadow-sm overflow-hidden mb-3">
+        <div className="p-4 d-flex align-items-center justify-content-between" style={{background: 'linear-gradient(90deg, #0d6efd 0%, #6ea8fe 100%)'}}>
+          <div className="d-flex align-items-center gap-2 text-white">
+            <i className="bi bi-speedometer2"></i>
+            <h5 className="mb-0">Dashboard</h5>
+          </div>
+          <small className="text-white-75">
+            {new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </small>
+        </div>
       </div>
 
    
 
 
       {/* Filtros por ubicación */}
-      <div className=" row mb-4">
+      <div className="row mb-4">
         <div className="col-12">
-          <div className="d-flex justify-content-between align-items-center card ">
-            <div className="card-header">
-              <h5 className="card-title mb-0">Filtrar por Ubicación</h5>
+          <div className="card shadow-sm">
+            <div className="card-header bg-white d-flex align-items-center gap-2">
+              <i className="bi bi-geo-alt text-danger"></i>
+              <h6 className="mb-0">Filtrar por Ubicación</h6>
             </div>
             <div className="card-body">
-              <div className="btn-group" role="group" aria-label="Filtros de ubicación">
+              <div className="btn-group flex-wrap" role="group" aria-label="Filtros de ubicación">
                 <button type="button" className={`btn btn-outline-primary ${selectedLocation === 'all' ? 'active' : ''}`} onClick={() => setSelectedLocation('all')}>
                   Todos
                 </button>
@@ -214,14 +237,15 @@ if(isLoading){
       {/* Tabla de actividad reciente */}
       <div className="row">
         <div className="col-lg-8 col-12 mb-4">
-          <div className="card">
-            <div className="card-header">
-              <h5 className="card-title mb-0">Actividad Reciente</h5>
+          <div className="card shadow-sm">
+            <div className="card-header bg-white d-flex align-items-center gap-2">
+              <i className="bi bi-activity text-primary"></i>
+              <h6 className="mb-0">Actividad Reciente</h6>
             </div>
-            <div className="card-body">
+            <div className="card-body p-0">
               <div className="table-responsive">
-                <table className="table table-hover">
-                  <thead>
+                <table className="table table-sm table-striped table-hover align-middle mb-0">
+                  <thead className="bg-light">
                     <tr>
                       <th>Fecha</th>
                       <th>Producto</th>
@@ -244,7 +268,9 @@ if(isLoading){
                             </span>
                           </td>
                           <td>{item.cantidad_vendida || item.cantidad}</td>
-                          <td>${item.total || item.costo_total}</td>
+                          <td>
+                            <span className="badge bg-light text-dark border">${item.total || item.costo_total}</span>
+                          </td>
                         </tr>
                       ))}
                   </tbody>
@@ -255,14 +281,15 @@ if(isLoading){
         </div>
         
         <div className="col-lg-4 col-12">
-          <div className="card">
-            <div className="card-header">
-              <h5 className="card-title mb-0">Productos proximos a vencer</h5>
+          <div className="card shadow-sm">
+            <div className="card-header bg-white d-flex align-items-center gap-2">
+              <i className="bi bi-exclamation-triangle text-warning"></i>
+              <h6 className="mb-0">Productos próximos a vencer</h6>
             </div>
-            <div className="card-body">
+            <div className="card-body p-0">
               <div className="table-responsive">
-                <table className="table table-hover">
-                  <thead>
+                <table className="table table-sm table-striped table-hover align-middle mb-0">
+                  <thead className="bg-light">
                     <tr>
                       <th>Vencimiento</th>
                       <th>Producto</th>
@@ -292,9 +319,10 @@ if(isLoading){
       {/* Gráficos */}
       <div className="row">
         <div className="col-lg-6 mb-4">
-          <div className="card">
-            <div className="card-header">
-              <h5 className="card-title mb-0">Articulos con mas movimientos</h5>
+          <div className="card shadow-sm">
+            <div className="card-header bg-white d-flex align-items-center gap-2">
+              <i className="bi bi-graph-up-arrow text-success"></i>
+              <h6 className="mb-0">Artículos con más movimientos</h6>
             </div>
             <div className="card-body">
               <SalesChart data={filteredVentas} />
@@ -302,9 +330,10 @@ if(isLoading){
           </div>
         </div>
         <div className="col-lg-6 mb-4">
-          <div className="card">
-            <div className="card-header">
-              <h5 className="card-title mb-0">Producción Mensual</h5>
+          <div className="card shadow-sm">
+            <div className="card-header bg-white d-flex align-items-center gap-2">
+              <i className="bi bi-bar-chart-line text-info"></i>
+              <h6 className="mb-0">Producción Mensual</h6>
             </div>
             <div className="card-body">
               <ProductionChart data={filteredProduccion} />

@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "vendedor": "VEN001",
+    "sku": "A1001",
+    "cantidad": 25,
+    "fecha": "2025-08-10",
+    "hora": "09:30:00",
+    "requiere_aprobacion": false,
+    "comentario": "Reposición semanal",
+    "usuario_id": 101,
+    "rol_solicitante": 3
+  },
+  {
+    "id": 2,
+    "vendedor": "VEN002",
+    "sku": "B2305",
+    "cantidad": 120,
+    "fecha": "2025-08-10",
+    "hora": "10:15:22",
+    "requiere_aprobacion": true,
+    "comentario": "Pedido especial por promoción",
+    "usuario_id": 102,
+    "rol_solicitante": 3
+  },
+  {
+    "id": 3,
+    "vendedor": "VEN003",
+    "sku": "C9900",
+    "cantidad": 10,
+    "fecha": "2025-08-11",
+    "hora": "08:02:05",
+    "requiere_aprobacion": false,
+    "comentario": "Bajo stock tienda 8060",
+    "usuario_id": 103,
+    "rol_solicitante": 3
+  }
+]

@@ -26,8 +26,12 @@ console.log("cargos",cargos)
 
   console.log('usuario logueado',user)
  
+  // Compatibilidad con user como arreglo u objeto
+  const u = Array.isArray(user) ? user[0] : user;
+  const roleValue = u?.rol ?? u?.cargo;
+  const numericRole = roleValue != null ? Number(roleValue) : undefined;
 
-  const navItems = [
+  const navItemsBase = [
     { path: '/', label: 'Dashboard', icon: 'bi-speedometer2' },
     { path: '/productos', label: 'Productos', icon: 'bi-box-seam' },
     { path: '/inventario', label: 'Inventario', icon: 'bi-archive' },
@@ -35,8 +39,17 @@ console.log("cargos",cargos)
     { path: '/proveedores', label: 'Proveedores', icon: 'bi bi-truck' },
     { path: '/ubicaciones', label: 'Ubicaciones', icon: 'bi bi-geo-alt' },
     { path: '/reportes', label: 'Reportes', icon: 'bi bi-list-columns-reverse' },
-    { path: '/configuracion', label: 'Configuración', icon: 'bi-gear' }
+    { path: '/configuracion', label: 'Configuración', icon: 'bi-gear' },
+    
   ];
+
+  // Solo para rol 3 (empleado)
+  const navItems = numericRole === 3
+    ? [
+        // ...navItemsBase,
+        { path: '/inventario', label: 'Inventario', icon: 'bi-archive' },
+      ]
+    : navItemsBase;
 
   if (loading || !isAuthenticated) return <div>Cargando...</div>;
 
@@ -64,28 +77,32 @@ console.log("cargos",cargos)
       <div 
         className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}
         style={{
-          width: isCollapsed ? '70px' : '250px',
+          width: isCollapsed ? '72px' : '260px',
           minHeight: '100vh',
-          transition: 'all 0.3s ease',
+          transition: 'all 0.25s ease',
           position: 'fixed',
           top: 0,
           left: 0,
-          zIndex: 1050
+          zIndex: 1050,
+          background: 'linear-gradient(180deg,rgba(13, 13, 14, 0) 0%, rgb(231, 233, 235) 100%)',
+          boxShadow: '0 0 24px rgba(255, 255, 255, 0.25)'
         }}
       >
         {/* Header del Sidebar */}
-        <div className="sidebar-header p-3 text-white d-flex align-items-center justify-content-between">
+        <div className="sidebar-header p-3 text-white d-flex align-items-center justify-content-between border-bottom"
+             style={{borderColor:'rgba(255,255,255,.08)'}}>
           {!isCollapsed && (
             <h5 className="mb-0 fw-bold">
-              <img style={{width: '100px'}} src={logoFritz} alt="Logo" className="logo" />
+              <img style={{width: '89px'}} src={logoFritz} alt="Logo" className="logo" />
             </h5>
           )}
           <button 
-            className="btn-toggle-sidebar"
+            className="btn btn-sm btn-outline-dark rounded-circle d-flex align-items-center justify-content-center "
             onClick={toggleSidebar}
             title={isCollapsed ? 'Expandir menú' : 'Colapsar menú'}
+            style={{width: isCollapsed ? 36 : 34, height: isCollapsed ? 36 : 34, opacity:.4}}
           >
-            <i className={`bi ${isCollapsed ? 'bi-chevron-right' : 'bi-chevron-left'}`}></i>
+            <i className={`text-dark bi ${isCollapsed ? 'bi-chevron-right' : 'bi-chevron-left'}`}></i>
           </button>
         </div>
 
@@ -100,8 +117,8 @@ console.log("cargos",cargos)
                     location.pathname === item.path ? 'active' : ''
                   }`}
                 >
-                  <i className={`bi ${item.icon} me-3`} style={{ fontSize: '1.2rem' }}></i>
-                  {!isCollapsed && <span>{item.label}</span>}
+                  <i className={`bi ${item.icon} me-3`} style={{ fontSize: '1.15rem' }}></i>
+                  {!isCollapsed && <span className="fw-semibold">{item.label}</span>}
                 </Link>
               </li>
             ))}
@@ -115,31 +132,28 @@ console.log("cargos",cargos)
             position: 'absolute',
             bottom: 0,
             width: '100%',
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-            fontSize: '0.8rem'
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            fontSize: '0.8rem',
+            background: 'rgba(255,255,255,0.02)'
           }}
         >
-          {!isCollapsed && (
-            <div className="text-center">
-              <small> 2025 Inventario Fritz</small>
-            </div>
-          )}
-          {user && (
+        
+          {u && (
             <div className="mt-auto p-3 border-top">
               <div className="d-flex align-items-center">
                 <div className="flex-shrink-0">
-                  <i className="bi bi-person-circle fs-4 text-primary"></i>
+                  <i className="bi bi-person-circle fs-4 text-info"></i>
                 </div>
                 {!isCollapsed && (
                   <div className="flex-grow-1 ms-2">
-                    <div className="text-muted small">{user[0].nombre.charAt(0).toUpperCase() + user[0].nombre.slice(1).toLowerCase()}{" "}{user[0].apellido.charAt(0).toUpperCase() + user[0].apellido.slice(1).toLowerCase()}</div>
-                    <div className="text-muted small">{cargos?.filter((item)=> Number(item.id) === Number(user[0].cargo)).map((items)=> items.nombre_cargo)}</div>
+                    <div className="text-dark small">{(u?.nombre || '').charAt(0).toUpperCase() + (u?.nombre || '').slice(1).toLowerCase()} { (u?.apellido || '').charAt(0).toUpperCase() + (u?.apellido || '').slice(1).toLowerCase()}</div>
+                    <div className="text-dark small">{cargos?.filter((item)=> Number(item.id) === Number(u?.cargo)).map((items)=> items.nombre_cargo)}</div>
                   </div>
                 )}
               </div>
               <button 
                 onClick={onLogout}
-                className={`btn btn-outline-danger btn-sm w-100 mt-2 ${isCollapsed ? 'p-1' : ''}`}
+                className={`btn btn-outline-dark btn-sm w-100 mt-2 ${isCollapsed ? 'p-1' : ''}`}
                 title="Cerrar sesión"
               >
                 <i className="bi bi-box-arrow-right"></i>
@@ -147,14 +161,17 @@ console.log("cargos",cargos)
               </button>
             </div>
           )}
+            {!isCollapsed && (
+            <div className="text-center">
+              <small className="text-dark opacity-50">© 2025 Inventario Fritz</small>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Estilos CSS personalizados */}
       <style jsx>{`
-        .sidebar {
-          overflow-y: auto;
-        }
+        .sidebar { overflow-y: auto; }
         
         .sidebar::-webkit-scrollbar {
           width: 4px;
@@ -169,6 +186,15 @@ console.log("cargos",cargos)
           border-radius: 2px;
         }
         
+        .sidebar .nav-link {
+          border-radius: .5rem;
+          padding: .6rem .75rem;
+          transition: background-color .2s ease, color .2s ease;
+        }
+        .sidebar .nav-link:hover { background: rgba(255,255,255,.06); }
+        .sidebar .nav-link.active { background: rgba(13,110,253,.2); color: #fff; }
+        .sidebar .btn-toggle-sidebar:hover { opacity: 1; }
+
         @media (max-width: 991px) {
           .sidebar {
             transform: translateX(-100%);

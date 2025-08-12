@@ -1,23 +1,5 @@
 import api from "./api";
-// sesion usuario
 
-// export const registro = async (data) => {
-//   try {
-//     const response = await api.post("/login_inventario/register", data)
-//     return response.data
-//   } catch (error) { 
-//     console.error("error al registrarte", error)
-//   }
-// }
-
-// export const login = async (data) => {
-//   try {
-//     const response = await api.post("/login_inventario/login", data)
-//     return response.data
-//   } catch (error) {
-//     console.error("Error al obtener datos del servidor:", error.message);
-//   }
-// }
 export const obtenerUsuarioLogueado = async (id) => {
   try {
     const response = await api.get(`/users/inventario/${id}`)
@@ -123,4 +105,72 @@ try {
 } catch (error) {
   console.error("Error al obtener datos del servidor:", error.message);
 }
+}
+
+// Promedio de ventas por SKU (para comparar sobrecupos)
+export const obtenerPromedioVentasSKU = async (sku) => {
+  if (!sku) return null;
+  try {
+    const response = await api.get(`/ventas/promedio/${encodeURIComponent(String(sku).trim())}`);
+    return response.data; // puede ser numero o {promedio: X}
+  } catch (error) {
+    if (error.code === 'ECONNABORTED') {
+      console.error("Error: La conexión con el servidor tardó demasiado tiempo");
+    } else if (error.response?.status === 404) {
+      console.error("Error: El endpoint de promedio de ventas no fue encontrado");
+    } else if (error.response?.status >= 500) {
+      console.error("Error: Problema en el servidor");
+    } else {
+      console.error("Error al obtener promedio de ventas:", error.message);
+    }
+    return null;
+  }
+}
+
+// Crear solicitud de requerimiento
+export const crearRequerimiento = async (data) => {
+  try {
+    const response = await api.post('/solicitud-productos', data);
+    return response.data;
+  } catch (error) {
+    if (error.code === 'ECONNABORTED') {
+      console.error("Error: La conexión con el servidor tardó demasiado tiempo");
+    } else if (error.response?.status === 404) {
+      console.error("Error: El endpoint /requerimientos no fue encontrado");
+    } else if (error.response?.status >= 500) {
+      console.error("Error: Problema en el servidor");
+    } else {
+      console.error("Error al crear requerimiento:", error.message);
+    }
+    throw error;
+  }
+}
+
+export const obtenerRequerimientos = async()=>{
+  try {
+    const response = await api.get('/solicitud-productos')
+    return response.data
+  } catch (error) {
+    console.error("Error al obtener requerimientos:", error.message);
+    if (error.code === 'ECONNABORTED') {
+      console.error("Error: La conexión con el servidor tardó demasiado tiempo");
+    } else if (error.response?.status === 404) {
+      console.error("Error: El endpoint /requerimientos no fue encontrado");
+    } else if (error.response?.status >= 500) {
+      console.error("Error: Problema en el servidor");
+    } else {
+      console.error("Error al obtener requerimientos:", error.message);
+    }
+    throw error;
+  }
+}
+
+export const actualizarRequerimiento=async(id, data)=>{
+  try {
+    const response = await api.patch(`/solicitud-productos/actualizar/${id}`, data)
+    return response.data
+  } catch (error) {
+    console.error("error al actualizar los datos", error.message)
+    throw error
+  }
 }

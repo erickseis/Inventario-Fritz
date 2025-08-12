@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './Auth.css';
 import { login } from '../service/authSesion';
+import { obtenerUsuarioLogueado } from '../service/connection';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -34,8 +35,26 @@ const Login = () => {
       if (response && response.userId) {
         // El login de authSesion ya guarda el usuario correctamente
         
-        // Redirigir al dashboard
-        navigate('/');
+        // Obtener datos completos del usuario incluyendo el rol
+        try {
+          const userData = await obtenerUsuarioLogueado(response.userId);
+          console.log('Datos usuario login:', userData);
+          
+          // Determinar rol del usuario
+          const roleValue = userData?.rol ?? userData?.cargo;
+          const numericRole = roleValue != null ? Number(roleValue) : undefined;
+          
+          // Redirigir según el rol
+          if (numericRole === 3) {
+            navigate('/inventario');
+          } else {
+            navigate('/');
+          }
+        } catch (error) {
+          console.error('Error al obtener datos del usuario:', error);
+          // Fallback: redirigir a dashboard si hay error
+          navigate('/');
+        }
       } else {
         setError('Credenciales inválidas. Por favor intenta de nuevo.');
       }

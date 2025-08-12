@@ -31,7 +31,8 @@ export const registro = async (data) => {
       const response = await api.post("/login_inventario/register", data)
       return response.data
     } catch (error) { 
-      console.error("error al registrarte", error)
+      console.error("Error al registrarte:", error.response?.data || error.message)
+      throw error.response?.data || error
     }
   }
   

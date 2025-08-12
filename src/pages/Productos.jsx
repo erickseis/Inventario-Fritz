@@ -9,7 +9,6 @@ const Productos = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [selectedCategoria, setSelectedCategoria] = useState('');
   const [selectedEstado, setSelectedEstado] = useState('');
-  const [stockActualFilter, setStockActualFilter] = useState('');
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc', or ''
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -89,9 +88,15 @@ const fetchStockMinimo = async()=>{
     });
   } 
   const columns = [
-    { key: 'co_art', label: 'Código', sortable: true },
-    { key: 'art_des', label: 'Descripción', sortable: true },
-    { key: 'categoria_principal', label: 'Categoría', sortable: true },
+    { key: 'co_art', label: 'Código', sortable: true, render: (value) => (
+      <span className="badge bg-light text-dark border">{String(value)}</span>
+    )},
+    { key: 'art_des', label: 'Descripción', sortable: true, render: (value) => (
+      <span className="fw-semibold">{value}</span>
+    )},
+    { key: 'categoria_principal', label: 'Categoría', sortable: true, render: (value) => (
+      <span className="badge bg-secondary">{value || '—'}</span>
+    )},
     { key: 'stock_disponible', label: 'Stock Disponible', sortable: true, render: (value, producto) => {
       const disponible = Number(producto.stock_act || 0) - Number(producto.stock_com || 0);
       return `${formatNumber(disponible)} un`;
@@ -104,7 +109,11 @@ const fetchStockMinimo = async()=>{
       if (!value) return 'Sin almacén';
       const cleanValue = String(value).trim();
       const almacen = almacenes.find(a => String(a.co_alma).trim() === cleanValue);
-      return almacen ? almacen.nombre : cleanValue;
+      return (
+        <span className="badge bg-info-subtle text-dark border">
+          {almacen ? almacen.nombre : cleanValue}
+        </span>
+      );
     }},
   ];
 
@@ -215,22 +224,37 @@ const fetchStockMinimo = async()=>{
   }
   
   return (
-    <div className="container-fluid py-2">
- 
+    <div className="container py-3">
+      <div className="card border-0 shadow-sm overflow-hidden mb-3">
+        <div className="p-4 d-flex align-items-center justify-content-between" style={{background: 'linear-gradient(90deg, #6f42c1 0%, #b794f6 100%)'}}>
+          <div className="d-flex align-items-center gap-2 text-white">
+            <i className="bi bi-grid-3x3-gap"></i>
+            <h5 className="mb-0">Productos</h5>
+          </div>
+          <small className="text-white-75">Consulta, filtra y gestiona el stock</small>
+        </div>
+      </div>
 
       {/* Filtros */}
-      <div className="d-flex justify-content-between align-items-center card mb-4">
+      <div className="card mb-4 shadow-sm">
+        <div className="card-header bg-white d-flex align-items-center gap-2">
+          <i className="bi bi-funnel text-primary"></i>
+          <h6 className="mb-0">Filtros</h6>
+        </div>
         <div className="card-body">
           <div className="row g-3">
             <div className="col-md-4">
               <label className="form-label">Buscar</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Buscar productos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+              <div className="input-group">
+                <span className="input-group-text"><i className="bi bi-search"></i></span>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Código, descripción o categoría..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
             <div className="col-md-4">
               <label className="form-label">Categoría</label>
@@ -266,33 +290,37 @@ const fetchStockMinimo = async()=>{
                 onClick={toggleSortOrder}
               >
                 {sortOrder === '' ? 'Sin ordenar' : 
-                 sortOrder === 'asc' ? 'Menor a Mayor 📈' : 'Mayor a Menor 📉'}
+                 sortOrder === 'asc' ? 'Menor a Mayor ' : 'Mayor a Menor '}
+              </button>
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="d-flex align-items-center mb-2 gap-2">
+              <i className="bi bi-geo-alt text-danger"></i>
+              <span className="fw-semibold">Ubicación</span>
+            </div>
+            <div className="btn-group flex-wrap" role="group" aria-label="Filtros de ubicación">
+              <button type="button" className={`btn btn-outline-primary ${selectedLocation === 'all' ? 'active' : ''}`} onClick={() => setSelectedLocation('all')}>
+                Todos
+              </button>
+              <button type="button" className={`btn btn-outline-primary ${selectedLocation === '7020' ? 'active' : ''}`} onClick={() => setSelectedLocation('7020')}>
+                Barquisimeto Principal 
+              </button>
+              <button type="button" className={`btn btn-outline-primary ${selectedLocation === '8010' ? 'active' : ''}`} onClick={() => setSelectedLocation('8010')}>
+                Maracaibo Occidente
+              </button>
+              <button type="button" className={`btn btn-outline-primary ${selectedLocation === '8060' ? 'active' : ''}`} onClick={() => setSelectedLocation('8060')}>
+                Barcelona Oriente
+              </button>
+              <button type="button" className={`btn btn-outline-primary ${selectedLocation === '8070' ? 'active' : ''}`} onClick={() => setSelectedLocation('8070')}>
+                Santa Cruz Aragua 
+              </button>
+              <button type="button" className={`btn btn-outline-primary ${selectedLocation === '8090' ? 'active' : ''}`} onClick={() => setSelectedLocation('8090')}>
+                Capital 
               </button>
             </div>
           </div>
         </div>
-            <div className="card-body">
-              <div className="btn-group" role="group" aria-label="Filtros de ubicación">
-                <button type="button" className={`btn btn-outline-primary ${selectedLocation === 'all' ? 'active' : ''}`} onClick={() => setSelectedLocation('all')}>
-                  Todos
-                </button>
-                <button type="button" className={`btn btn-outline-primary ${selectedLocation === '7020' ? 'active' : ''}`} onClick={() => setSelectedLocation('7020')}>
-                  Barquisimeto Principal 
-                </button>
-                <button type="button" className={`btn btn-outline-primary ${selectedLocation === '8010' ? 'active' : ''}`} onClick={() => setSelectedLocation('8010')}>
-                  Maracaibo Occidente
-                </button>
-                <button type="button" className={`btn btn-outline-primary ${selectedLocation === '8060' ? 'active' : ''}`} onClick={() => setSelectedLocation('8060')}>
-                  Barcelona Oriente
-                </button>
-                <button type="button" className={`btn btn-outline-primary ${selectedLocation === '8070' ? 'active' : ''}`} onClick={() => setSelectedLocation('8070')}>
-                  Santa Cruz Aragua 
-                </button>
-                <button type="button" className={`btn btn-outline-primary ${selectedLocation === '8090' ? 'active' : ''}`} onClick={() => setSelectedLocation('8090')}>
-                  Capital 
-                </button>
-              </div>
-            </div>
       </div>
        {/* Filtros por ubicación */}
        {/* <div className=" row mb-4">
@@ -352,14 +380,15 @@ const fetchStockMinimo = async()=>{
         </div>
       )}
       {/* Tabla de productos */}
-      <div className="card">
-        <div className="card-header">
-          <h5 className="mb-0">Listado de Productos ({filteredProductos.length})</h5>
+      <div className="card shadow-sm">
+        <div className="card-header bg-white d-flex justify-content-between align-items-center">
+          <h6 className="mb-0 d-flex align-items-center gap-2"><i className="bi bi-boxes"></i>Listado de Productos</h6>
+          <small className="text-muted">Total filtrados: {filteredProductos.length}</small>
         </div>
-        <div className="card-body">
+        <div className="card-body p-0">
           <div className="table-responsive">
-            <table className="table table-hover">
-              <thead>
+            <table className="table table-sm table-striped table-hover align-middle mb-0">
+              <thead style={{position:'sticky', top:0, zIndex:1}} className="bg-light">
                 <tr>
                   {columns.map(column => (
                     <th key={column.key}>{column.label}</th>
@@ -371,7 +400,7 @@ const fetchStockMinimo = async()=>{
               <tbody>
                 {currentProducts.map((producto) => (
                   <tr key={`${producto.co_art}-${producto.co_alma || 'all'}`}>
-                    {columns.map(column => (
+                  {columns.map(column => (
                       <td key={column.key}>
                         {column.render 
                           ? column.render(producto[column.key], producto) 

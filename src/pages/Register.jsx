@@ -103,7 +103,37 @@ const Register = () => {
     try {
       // Aquí iría la lógica para registrar al usuario con tu backend
       // Por ahora simularemos un registro exitoso
-      const userRegistro = await registro(formData);
+      // Mapeo exacto según estructura DB
+      const datosParaEnvio = {
+        usuario: formData.usuario.trim(),
+        codigo_vendedor: formData.codigo_vendedor && formData.codigo_vendedor.trim() !== "" ? formData.codigo_vendedor.trim() : 'null',
+        nombre: formData.nombre.trim(),
+        apellido: formData.apellido.trim(),
+        correo: formData.correo.trim(),
+        telefono: formData.telefono.trim(),
+        ciudad: formData.ciudad.trim(),
+        departamento: formData.departamento ? Number(formData.departamento) : null,
+        rol: formData.rol ? Number(formData.rol) : null,
+        cargo: formData.cargo ? Number(formData.cargo) : null,
+        contrasenha: formData.contrasenha,
+        // Campos que podría esperar el backend
+        deleted: false
+      };
+      
+      console.log("Datos enviados al backend:", JSON.stringify(datosParaEnvio, null, 2));
+      
+      // Validar campos requeridos
+      const camposRequeridos = ['usuario', 'nombre', 'apellido', 'correo', 'contrasenha'];
+      const camposFaltantes = camposRequeridos.filter(campo => !datosParaEnvio[campo] || datosParaEnvio[campo].toString().trim() === '');
+      
+      if (camposFaltantes.length > 0) {
+        console.error("Campos requeridos faltantes:", camposFaltantes);
+        setError(`Por favor complete los campos: ${camposFaltantes.join(', ')}`);
+        setLoading(false);
+        return;
+      }
+      
+      const userRegistro = await registro(datosParaEnvio);
       if (userRegistro) {
         // Simulación de registro
         console.log("Registrando usuario2 enviado:", {
@@ -160,7 +190,7 @@ const Register = () => {
                 <form onSubmit={handleSubmit}>
                   <div className="mb-3">
                     <label htmlFor="usuario" className="form-label">
-                      <i className="bi bi-person me-2"></i>Usuario
+                    <i class="bi bi-person-badge"></i>Usuario
                     </label>
                     <input
                       type="text"
@@ -237,7 +267,7 @@ const Register = () => {
                   </div>
                   <div className="mb-3">
                     <label htmlFor="phone" className="form-label">
-                      <i className="bi bi-telephone me-2"></i>Ciudad
+                    <i class="bi bi-pin-map-fill"></i>Ciudad
                     </label>
                     <input
                       type="tel"
@@ -252,7 +282,7 @@ const Register = () => {
 
                   <div className="mb-3">
                     <label htmlFor="departamento" className="form-label">
-                      <i className="bi bi-geo-alt me-2"></i>Departamento
+                    <i class="bi bi-building"></i>Departamento
                     </label>
                     <select
                       className="form-select custom-select"
@@ -307,9 +337,11 @@ const Register = () => {
                       onChange={handleChange}
                       required
                     >
+                      <option value="">Selecciona un cargo</option>
                       {formData.departamento ? cargos.filter((item)=> Number(item.departamento_id) === Number(formData.departamento)).map((cargo) => {
                         formData.rol = cargo.rol_id
                         return(
+                          
                         <option key={cargo.id} value={cargo.id}>
                           {cargo.nombre_cargo}
                         </option>
