@@ -5,12 +5,13 @@ import { crearRequerimiento, obtenerPromedioVentasSKU } from '../service/connect
 
 const SolicitudRequerimientoForm = ({fetchRequerimientos}) => {
   const { user } = useUser();
+  const u = Array.isArray(user) ? user[0] : user;
   const [inventario, setInventario] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 const [vendedores, setVendedores]= useState([]);
   const [form, setForm] = useState({
-    codigo_vendedor: String(user?.codigo_vendedor) || String(user[0]?.codigo_vendedor),
+    codigo_vendedor: String(u?.codigo_vendedor) || '',
     sku_producto: '',
     cantidad_solicitada: '',
     fecha_solicitud: '',
@@ -56,11 +57,11 @@ const [vendedores, setVendedores]= useState([]);
     const hora = now.toTimeString().slice(0, 8);
     setForm((prev) => ({
       ...prev,
-      vendedor: String(user?.codigo_vendedor) || String(user[0]?.codigo_vendedor),
+      codigo_vendedor: String(u?.codigo_vendedor) || '',
       fecha,
       hora,
     }));
-  }, [user, vendedores]);
+  }, [u, vendedores]);
 
 
 
@@ -111,7 +112,7 @@ const [vendedores, setVendedores]= useState([]);
     }
 
     const payload = {
-        codigo_vendedor: user[0]?.codigo_vendedor,
+        codigo_vendedor: u?.codigo_vendedor,
         sku_producto: form.sku_producto.trim(),
         cantidad_solicitada: Number(form.cantidad_solicitada),
         fecha_solicitud: form.fecha_solicitud,
@@ -135,8 +136,11 @@ const [vendedores, setVendedores]= useState([]);
       setError('No se pudo registrar la solicitud');
     }
   };
-
-  if(!user || !inventario || !vendedores){
+console.log("vendedores", vendedores)
+console.log("inventario", inventario)
+console.log("user", u)
+console.log("form", form)
+  if(!u || !inventario || !vendedores){
     return (
         <div className="d-flex justify-content-center align-items-center" style={{minHeight:'60vh'}}>
           <div className="spinner-border text-primary" role="status">
@@ -167,7 +171,7 @@ const [vendedores, setVendedores]= useState([]);
               type="text"
               className="form-control"
               name="codigo_vendedor"
-              value={vendedores.find(v => String(v.co_ven) === String(user[0]?.codigo_vendedor))?.ven_des || ''}
+              value={vendedores.find(v => String(v.co_ven) === String(u?.codigo_vendedor))?.ven_des || ''}
               required
               readOnly
             />

@@ -25,7 +25,6 @@ const SolicitudesTable = ({ data = [], formatearFecha, fetchRequerimientos }) =>
       evaluador: '' // Si u es undefined o no tiene id, evaluador será una cadena vacía
   });
 
-console.log("datos antes de enviar",formData)
 const fetchObtenerVendedores=async()=>{
   try {
     setError(null);
@@ -181,13 +180,37 @@ console.log('filtro', filtered)
     closeModal();
   };
 
-  const handleReject = (id) => {
-    const cantidadFinal = Number(overrideCantidad || selected?.cantidad || 0);
-    console.log('Rechazar solicitud', { id, observacion, cantidad_sugerida: cantidadFinal });
-    // TODO: Llamar API para rechazar; puede incluir cantidad sugerida y observación
+  const handleReject = async(id) => {
+    try {
+      const payload = {
+        cantidad_aprobada: 0,
+        fecha_aprobacion: formData.fecha_aprobacion,
+        observacion: formData.observacion,
+        estado_aprobacion: false,
+        evaluador: u?.id
+      }
+      console.log('datos actualizados', payload)
+      await actualizarRequerimiento(id, payload)
+      fetchObtenerVendedores();
+      cargarInventario();
+      fetchRequerimientos();
+      Swal.fire({
+        title:'Datos actualizados',
+        text:'Los datos han sido actualizados',
+        icon:'success'
+      })
+      closeModal();
+    } catch (error) {
+      Swal.fire({
+          title:'Error al actualizar los datos',
+          text:'revise los campos',
+          icon:'error'
+      })
+      console.error("Error al aprobar la solicitud", error.message)
+    }
+    
     closeModal();
   };
-
   return (
     <div className="card shadow-sm mt-3">
       <div className="card-header bg-white d-flex justify-content-between align-items-center">
@@ -241,15 +264,17 @@ console.log('filtro', filtered)
                 <tr key={s.id ?? idx}>
                   <td>{s.id ?? idx + 1}</td>
                   <td>{`${s.codigo_vendedor} - ${vendedores?.filter(v =>String( v.co_ven) === String(s.codigo_vendedor))?.map((v) => v.ven_des || 'Vendedor no encontrado')}`}</td>
-                  <td>{`${s.sku_producto} - ${inventario?.filter(i => String(i.co_art) === String(s.sku_producto))?.map((i) => i.art_des || 'Producto no encontrado')}`}</td>
+                  <td>{`${s.sku_producto} - ${inventario?.filter(i => String(i.co_art).toLocaleLowerCase().trim() === String(s.sku_producto).toLocaleLowerCase().trim())?.map((i) => i.art_des.trim() || 'Producto no encontrado')}`}</td>
                   <td className="text-end">{Number(s.cantidad_solicitada)}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{formatearFecha(s.fecha_solicitud)}</td>
                   <td>
-                    {s.estado_aprobacion ? (
-                      <span className="badge bg-success">Aprobado</span>
-                    ) : (
-                      <span className="badge bg-warning text-dark">Pendiente</span>
-                    )}
+                  {s.estado_aprobacion === null?  (
+   <span className="badge bg-warning text-dark">Pendiente</span>
+) : s.estado_aprobacion === false ? (
+  <span className="badge bg-danger">Rechazado</span>
+) : (
+  <span className="badge bg-success">Aprobado</span>
+)}
                   </td>
                   <td style={{ maxWidth: 300 }}>{s.comentario || '-'}</td>
                   {
@@ -274,11 +299,13 @@ console.log('filtro', filtered)
                   <td className="text-end">{Number(s.cantidad_solicitada)}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{formatearFecha(s.fecha_solicitud)}</td>
                   <td>
-                    {s.estado_aprobacion ? (
-                      <span className="badge bg-success">Aprobado</span>
-                    ) : (
-                      <span className="badge bg-warning text-dark">Pendiente</span>
-                    )}
+                  {s.estado_aprobacion === null?  (
+   <span className="badge bg-warning text-dark">Pendiente</span>
+) : s.estado_aprobacion === false ? (
+  <span className="badge bg-danger">Rechazado</span>
+) : (
+  <span className="badge bg-success">Aprobado</span>
+)}
                   </td>
                   <td style={{ maxWidth: 300 }}>{s.comentario || '-'}</td>
                   {

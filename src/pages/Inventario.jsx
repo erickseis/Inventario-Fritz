@@ -7,6 +7,7 @@ import { obtenerRequerimientos } from '../service/connection';
 
 const Inventario = () => {
   const [solicitudes, setSolicitudes] = useState([]);
+  const[loading,setLoading]=useState(true);
   const { user } = useUser();
   const u = Array.isArray(user) ? user[0] : user;
   const roleValue = u?.rol ?? u?.cargo;
@@ -15,10 +16,11 @@ const Inventario = () => {
 const fetchRequerimientos =async()=>{
   try {
     const data= await obtenerRequerimientos();
-    setSolicitudes(data)
+    setSolicitudes(data);
   } catch (error) {
     console.error("Error al obtener requerimientos:", error.message);
-    
+  }finally{
+    setLoading(false)
   }
 }
   useEffect(() => {
@@ -41,6 +43,16 @@ const fetchRequerimientos =async()=>{
       return fecha;
     }
   };
+  if(loading){
+    return(
+      <div className="text-center py-5">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Cargando...</span>
+        </div>
+        <p className="mt-2 text-muted">Cargando datos...</p>
+      </div>
+    )
+  }
   return (
     <div className="container py-3">
       <div className="card border-0 shadow-sm overflow-hidden">
