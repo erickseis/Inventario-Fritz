@@ -12,6 +12,7 @@ import Proveedores from '../pages/Proveedores';
 import Ubicaciones from '../pages/Ubicaciones';
 import Reportes from '../pages/Reportes';
 import Configuracion from '../pages/Configuracion';
+import Pronostico from '../pages/Pronostico';
 import Header from './Header';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
@@ -87,6 +88,27 @@ const MainApp = () => {
                 <Header />
                 <div className="content-wrapper">
                   <Dashboard />
+                </div>
+              </main>
+            </div>
+          } />
+          <Route path="/pronostico" element={
+            <div className="d-flex">
+              <Sidebar 
+                isCollapsed={sidebarCollapsed} 
+                toggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} 
+                onLogout={handleLogout}
+              />
+              <main className="flex-grow-1 transition-all"
+                style={{
+                  marginLeft: sidebarCollapsed ? '70px' : '250px',
+                  transition: 'margin-left 0.3s ease',
+                  minHeight: '100vh'
+                }}
+              >
+                <Header />
+                <div className="content-wrapper">
+                  <Pronostico />
                 </div>
               </main>
             </div>

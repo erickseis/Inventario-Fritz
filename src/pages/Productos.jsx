@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { obtenerMovimientoSKU } from '../service/connection';
 import FormModal from '../components/FormModal';
 import { obtenerInventario, obtenerStockMin } from '../service/connection';
 import { ModalObservacion } from '../components/ModalObservacion';
@@ -18,6 +19,18 @@ const Productos = () => {
 const [dataStockMinimo, setDataStockMinimo] = useState([])
 const [showModalObservacion, setShowModalObservacion] = useState(false);
 const [observacion, setObservacion] = useState('');
+  // meses para promedio
+  const [avgMonths, setAvgMonths] = useState(3);
+  // mes base (YYYY-MM)
+  const [baseMonth, setBaseMonth] = useState(() => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    return `${yyyy}-${mm}`;
+  });
+  // mapa de promedios por SKU (co_art)
+  const [avgBySKU, setAvgBySKU] = useState({});
+  const [movimientosAll, setMovimientosAll] = useState([]);
 
 const handleShowModalObservacion = () => {
   setShowModalObservacion(!showModalObservacion);
@@ -59,8 +72,6 @@ const fetchStockMinimo = async()=>{
     setCurrentPage(1);
   }, [searchTerm, selectedCategoria, selectedEstado, selectedLocation]);
 
-  console.log("data stock min", dataStockMinimo)
-  console.log("data productos almacenes", dataProductosAlmacenes)
 
   // Función helper para obtener stock mínimo desde dataStockMinimo
   const getStockMinimo = (co_art) => {
@@ -75,6 +86,78 @@ const fetchStockMinimo = async()=>{
     if (value === null || value === undefined || value === '') return '0';
     const num = Math.floor(Number(value));
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  // Cargar todos los movimientos una sola vez (el backend no filtra por mes)
+  useEffect(() => {
+    let cancelled = false;
+    const loadAll = async () => {
+      try {
+        const data = await obtenerMovimientoSKU();
+        if (!cancelled) setMovimientosAll(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error('Error obteniendo movimientos:', e?.message || e);
+        if (!cancelled) setMovimientosAll([]);
+      }
+    };
+    loadAll();
+    return () => { cancelled = true; };
+  }, []);
+  // Cálculo de promedio por SKU basado en total_cajas_vendidas de movimientos filtrados por meses
+  useEffect(() => {
+    let cancelled = false;
+    const fetchMovimientos = async () => {
+      try {
+        // helpers locales para evitar dependencias faltantes
+        const pad2 = (n) => String(n).padStart(2, '0');
+        const getMonthsFrom = (yyyyMm, n) => {
+          // yyyyMm: 'YYYY-MM'
+          const [yStr, mStr] = String(yyyyMm).split('-');
+          let year = Number(yStr);
+          let monthIdx = Number(mStr) - 1; // 0-11
+          const out = [];
+          for (let i = 0; i < n; i++) {
+            const d = new Date(year, monthIdx - i, 1);
+            out.push(`${d.getFullYear()}-${pad2(d.getMonth() + 1)}`);
+          }
+          return out;
+        };
+
+        const meses = getMonthsFrom(baseMonth, Number(avgMonths || 1));
+        const mesesSet = new Set(meses);
+        // Filtrar del dataset completo solo los meses seleccionados
+        const filtrados = Array.isArray(movimientosAll)
+          ? movimientosAll.filter((mov) => mov?.mes && mesesSet.has(String(mov.mes)))
+          : [];
+        // Acumular por co_art
+        const acumulado = {};
+        filtrados.forEach((mov) => {
+          const co = String(mov?.co_art || '').trim();
+          if (!co) return;
+          const cajas = Number(mov?.total_cajas_vendidas || 0);
+          acumulado[co] = (acumulado[co] || 0) + cajas;
+        });
+        // Calcular promedio simple: total acumulado / meses solicitados
+        const promedios = {};
+        const divisor = Number(avgMonths || 1);
+        Object.keys(acumulado).forEach((co) => {
+          promedios[co] = acumulado[co] / divisor;
+        });
+        if (!cancelled) setAvgBySKU(promedios);
+      } catch (e) {
+        console.error('Error cargando movimientos para promedio:', e?.message || e);
+        if (!cancelled) setAvgBySKU({});
+      }
+    };
+    fetchMovimientos();
+    return () => { cancelled = true; };
+  }, [avgMonths, baseMonth, movimientosAll]);
+
+  const getPromedioMensual = (producto) => {
+    const key = String(producto?.co_art || '').trim();
+    if (!key) return null;
+    const val = avgBySKU[key];
+    return typeof val === 'number' ? val : null;
   };
 
   const filtrarProductosPorAlmacen = (data = dataProductosAlmacenes) => {
@@ -114,7 +197,15 @@ const fetchStockMinimo = async()=>{
           {almacen ? almacen.nombre : cleanValue}
         </span>
       );
-    }},
+    }},{ key: 'promedio', label: 'Promedio Movimiento', sortable: true, render: (value, producto) => {
+      const promedio = getPromedioMensual(producto);
+      if (promedio === null) return 'Sin datos';
+      return (
+        <span className="badge bg-info-subtle text-dark border">
+          {formatNumber(promedio)} un/mes
+        </span>
+      );
+    }}
   ];
 
   const formFields = [
@@ -283,6 +374,29 @@ const fetchStockMinimo = async()=>{
               </select>
             </div>
             <div className="col-md-4">
+              <label className="form-label">Promedio Movimiento (meses)</label>
+              <select
+                className="form-select"
+                value={avgMonths}
+                onChange={(e) => setAvgMonths(Number(e.target.value))}
+              >
+                <option value={1}>Último 1 mes</option>
+                <option value={2}>Últimos 2 meses</option>
+                <option value={3}>Últimos 3 meses</option>
+                <option value={6}>Últimos 6 meses</option>
+                <option value={12}>Últimos 12 meses</option>
+              </select>
+            </div>
+            <div className="col-md-4">
+              <label className="form-label">Mes base</label>
+              <input
+                type="month"
+                className="form-control"
+                value={baseMonth}
+                onChange={(e) => setBaseMonth(e.target.value)}
+              />
+            </div>
+            <div className="col-md-4">
               <label className="form-label">Ordenar por Stock</label>
               <button 
                 type="button"
@@ -393,6 +507,7 @@ const fetchStockMinimo = async()=>{
                   {columns.map(column => (
                     <th key={column.key}>{column.label}</th>
                   ))}
+                  
                   <th>Estado</th>
                   <th>Acciones</th>
                 </tr>

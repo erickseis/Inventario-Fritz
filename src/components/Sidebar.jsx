@@ -39,6 +39,7 @@ console.log("cargos",cargos)
     { path: '/proveedores', label: 'Proveedores', icon: 'bi bi-truck' },
     { path: '/ubicaciones', label: 'Ubicaciones', icon: 'bi bi-geo-alt' },
     { path: '/reportes', label: 'Reportes', icon: 'bi bi-list-columns-reverse' },
+    { href: '/st/' ,label: 'Pronóstico', icon: 'bi bi-graph-up' },
     { path: '/configuracion', label: 'Configuración', icon: 'bi-gear' },
     
   ];
@@ -110,16 +111,26 @@ console.log("cargos",cargos)
         <nav className="sidebar-nav p-3">
           <ul className="nav flex-column" style={{ listStyle: 'none', padding: 0 }}>
             {navItems.map(item => (
-              <li key={item.path} className="nav-item mb-2">
-                <Link 
-                  to={item.path}
-                  className={`nav-link d-flex align-items-center text-white ${
-                    location.pathname === item.path ? 'active' : ''
-                  }`}
-                >
-                  <i className={`bi ${item.icon} me-3`} style={{ fontSize: '1.15rem' }}></i>
-                  {!isCollapsed && <span className="fw-semibold">{item.label}</span>}
-                </Link>
+              <li key={item.path || item.href} className="nav-item mb-2">
+                {item.href ? (
+                  <a
+                    href={item.href}
+                    className={`nav-link d-flex align-items-center text-white`}
+                  >
+                    <i className={`bi ${item.icon} me-3`} style={{ fontSize: '1.15rem' }}></i>
+                    {!isCollapsed && <span className="fw-semibold">{item.label}</span>}
+                  </a>
+                ) : (
+                  <Link
+                    to={item.path}
+                    className={`nav-link d-flex align-items-center text-white ${
+                      location.pathname === item.path ? 'active' : ''
+                    }`}
+                  >
+                    <i className={`bi ${item.icon} me-3`} style={{ fontSize: '1.15rem' }}></i>
+                    {!isCollapsed && <span className="fw-semibold">{item.label}</span>}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>
@@ -163,7 +174,7 @@ console.log("cargos",cargos)
           )}
             {!isCollapsed && (
             <div className="text-center">
-              <small className="text-dark opacity-50">© 2025 Inventario Fritz</small>
+              <small className="text-dark opacity-50"> 2025 Inventario Fritz</small>
             </div>
           )}
         </div>
