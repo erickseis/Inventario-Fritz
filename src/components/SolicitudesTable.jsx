@@ -211,6 +211,17 @@ console.log('filtro', filtered)
     
     closeModal();
   };
+
+const articulosNombreMap = useMemo(() => {
+  if (!Array.isArray(inventario)) return {};
+  const map = {};
+  for (const a of inventario) {
+    const key = (a?.co_art || '').trim().toUpperCase();
+    if (key) map[key] = a?.art_des || '';
+  }
+  return map;
+}, [inventario]);
+
   return (
     <div className="card shadow-sm mt-3">
       <div className="card-header bg-white d-flex justify-content-between align-items-center">
@@ -264,7 +275,7 @@ console.log('filtro', filtered)
                 <tr key={s.id ?? idx}>
                   <td>{s.id ?? idx + 1}</td>
                   <td>{`${s.codigo_vendedor} - ${vendedores?.filter(v =>String( v.co_ven) === String(s.codigo_vendedor))?.map((v) => v.ven_des || 'Vendedor no encontrado')}`}</td>
-                  <td>{`${s.sku_producto} - ${inventario?.filter(i => String(i.co_art).toLocaleLowerCase().trim() === String(s.sku_producto).toLocaleLowerCase().trim())?.map((i) => i.art_des.trim() || 'Producto no encontrado')}`}</td>
+                  <td>{`${s.sku_producto} - ${articulosNombreMap[s.sku_producto] || 'Producto no encontrado'}`}</td>
                   <td className="text-end">{Number(s.cantidad_solicitada)}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{formatearFecha(s.fecha_solicitud)}</td>
                   <td>
@@ -295,7 +306,7 @@ console.log('filtro', filtered)
                 <tr key={s.id ?? idx}>
                   <td>{s.id ?? idx + 1}</td>
                   <td>{`${s.codigo_vendedor} - ${vendedores?.filter(v =>String( v.co_ven) === String(s.codigo_vendedor))?.map((v) => v.ven_des || 'Vendedor no encontrado')}`}</td>
-                  <td>{`${s.sku_producto} - ${inventario?.filter(i => String(i.co_art) === String(s.sku_producto))?.map((i) => i.art_des || 'Producto no encontrado')}`}</td>
+                  <td>{`${s.sku_producto} - ${articulosNombreMap[s.sku_producto] || 'Producto no encontrado'}`}</td>
                   <td className="text-end">{Number(s.cantidad_solicitada)}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{formatearFecha(s.fecha_solicitud)}</td>
                   <td>

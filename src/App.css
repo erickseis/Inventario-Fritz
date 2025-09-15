@@ -79,8 +79,8 @@
 
 /* Contenido principal */
 .content-wrapper {
-  padding: 20px;
-  min-height: 100vh;
+  /* padding: 20px; */
+  min-height: 80vh;
   background-color: #f8f9fa;
 }
 

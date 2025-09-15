@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import logoFritz from '../assets/image/logo-fritz-web.png'
-// import { obtenerUsuarioLogueado } from '../service/connection';
 import { useUser } from '../hooks/useUser';
 import { obtenerCargos } from '../service/connection';
 
@@ -36,10 +35,11 @@ console.log("cargos",cargos)
     { path: '/productos', label: 'Productos', icon: 'bi-box-seam' },
     { path: '/inventario', label: 'Inventario', icon: 'bi-archive' },
     { path: '/movimientos', label: 'Movimientos', icon: 'bi bi-arrow-left-right' },
+    { path: '/pronostico' ,label: 'Predictivo', icon: 'bi bi-graph-up' },
+    // { href: '/st/' ,label: 'Pronóstico', icon: 'bi bi-graph-up' },
     { path: '/proveedores', label: 'Proveedores', icon: 'bi bi-truck' },
     { path: '/ubicaciones', label: 'Ubicaciones', icon: 'bi bi-geo-alt' },
     { path: '/reportes', label: 'Reportes', icon: 'bi bi-list-columns-reverse' },
-    { href: '/st/' ,label: 'Pronóstico', icon: 'bi bi-graph-up' },
     { path: '/configuracion', label: 'Configuración', icon: 'bi-gear' },
     
   ];
@@ -111,7 +111,7 @@ console.log("cargos",cargos)
         <nav className="sidebar-nav p-3">
           <ul className="nav flex-column" style={{ listStyle: 'none', padding: 0 }}>
             {navItems.map(item => (
-              <li key={item.path || item.href} className="nav-item mb-2">
+              <li key={item.path || item.href} className="nav-item ">
                 {item.href ? (
                   <a
                     href={item.href}
@@ -122,6 +122,7 @@ console.log("cargos",cargos)
                   </a>
                 ) : (
                   <Link
+                  style={item.label === 'Proveedores' || item.label === 'Ubicaciones' || item.label === 'Reportes' ? {opacity: .4} : {}}
                     to={item.path}
                     className={`nav-link d-flex align-items-center text-white ${
                       location.pathname === item.path ? 'active' : ''

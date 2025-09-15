@@ -323,6 +323,27 @@ const MainApp = () => {
               </main>
             </div>
           } />
+          <Route path="/pronostico" element={
+            <div className="d-flex">
+              <Sidebar 
+                isCollapsed={sidebarCollapsed} 
+                toggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} 
+                onLogout={handleLogout}
+              />
+              <main className="flex-grow-1 transition-all"
+                style={{
+                  marginLeft: sidebarCollapsed ? '70px' : '250px',
+                  transition: 'margin-left 0.3s ease',
+                  minHeight: '100vh'
+                }}
+              >
+                <Header />
+                <div className="content-wrapper">
+                  <Pronostico />
+                </div>
+              </main>
+            </div>
+          } />
           {/* Ruta exclusiva para rol 3 (empleado) */}
           <Route path="/empleado/solicitudes" element={
             <RoleProtectedRoute allowedRoles={[3]}>

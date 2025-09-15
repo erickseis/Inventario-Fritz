@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { obtenerMovimientoSKU } from '../service/connection';
 import FormModal from '../components/FormModal';
 import { obtenerInventario, obtenerStockMin } from '../service/connection';
 import { ModalObservacion } from '../components/ModalObservacion';
+import { DataMovimientosContext } from '../hooks/movimientos.context';
+import Select from 'react-select';
 
 const Productos = () => {
+  const {dataArticulos} = useContext(DataMovimientosContext)
  const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -220,7 +223,6 @@ const fetchStockMinimo = async()=>{
     { name: 'co_art', label: 'Código Articulo', type: 'text', required: false, disabled: true },
     { name: 'stock_min', label: 'Stock Mínimo', type: 'number', required: true },
     { name: 'observacion', label: 'Observación', type: 'text', required: false },
-    // { name: 'art_des', label: 'Descripción', type: 'text', required: true }
   ];
 
 
@@ -303,7 +305,18 @@ const fetchStockMinimo = async()=>{
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
+  const articulosMap = useMemo(() => {
+    if (!dataArticulos) return {};
+    return dataArticulos.reduce((map, articulo) => {
+      map[articulo.co_art.trim()] = articulo.art_des;
+      return map;
+    }, {});
+  }, [dataArticulos]);
 
+  const options = Object.keys(articulosMap || {}).map((co) => ({
+    value: co,
+    label: `${co} - ${articulosMap[co]}`,
+  }));
   const categorias = [...new Set(dataProductosAlmacenes.map(p => p.categoria_principal))].sort();
 
   if(isLoading || !dataProductosAlmacenes || dataProductosAlmacenes.length === 0){
@@ -336,21 +349,25 @@ const fetchStockMinimo = async()=>{
           <div className="row g-3">
             <div className="col-md-4">
               <label className="form-label">Buscar</label>
-              <div className="input-group">
+              <div className="input-group" style={{zIndex:'1000'}}>
                 <span className="input-group-text"><i className="bi bi-search"></i></span>
-                <input
-                  type="text"
+                <Select
                   className="form-control"
-                  placeholder="Código, descripción o categoría..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+                    options={options}
+                    isClearable
+                    isSearchable
+                    placeholder="Seleccione"
+                    onChange={(opt) =>
+                      setSearchTerm(opt?.value || "")
+                    }
+                  />
+          
               </div>
             </div>
             <div className="col-md-4">
               <label className="form-label">Categoría</label>
               <select 
-                className="form-select"
+                className="form-control form-select"
                 value={selectedCategoria}
                 onChange={(e) => setSelectedCategoria(e.target.value)}
               >
@@ -363,7 +380,7 @@ const fetchStockMinimo = async()=>{
             <div className="col-md-4">
               <label className="form-label">Estado</label>
               <select 
-                className="form-select"
+                className="form-control form-select"
                 value={selectedEstado}
                 onChange={(e) => setSelectedEstado(e.target.value)}
               >
@@ -376,7 +393,7 @@ const fetchStockMinimo = async()=>{
             <div className="col-md-4">
               <label className="form-label">Promedio Movimiento (meses)</label>
               <select
-                className="form-select"
+                className="form-control form-select"
                 value={avgMonths}
                 onChange={(e) => setAvgMonths(Number(e.target.value))}
               >
@@ -400,8 +417,9 @@ const fetchStockMinimo = async()=>{
               <label className="form-label">Ordenar por Stock</label>
               <button 
                 type="button"
-                className="btn btn-outline-primary w-100"
+                className="btn btn-outline-primary w-100 p-2"
                 onClick={toggleSortOrder}
+                style={{height:'3rem'}}
               >
                 {sortOrder === '' ? 'Sin ordenar' : 
                  sortOrder === 'asc' ? 'Menor a Mayor ' : 'Mayor a Menor '}
@@ -413,7 +431,7 @@ const fetchStockMinimo = async()=>{
               <i className="bi bi-geo-alt text-danger"></i>
               <span className="fw-semibold">Ubicación</span>
             </div>
-            <div className="btn-group flex-wrap" role="group" aria-label="Filtros de ubicación">
+            <div className=" d-flex  btn-group flex-wrap" role="group" aria-label="Filtros de ubicación">
               <button type="button" className={`btn btn-outline-primary ${selectedLocation === 'all' ? 'active' : ''}`} onClick={() => setSelectedLocation('all')}>
                 Todos
               </button>
@@ -436,17 +454,7 @@ const fetchStockMinimo = async()=>{
           </div>
         </div>
       </div>
-       {/* Filtros por ubicación */}
-       {/* <div className=" row mb-4">
-        <div className="col-12">
-          <div className="d-flex justify-content-between align-items-center card ">
-            <div className="card-header">
-              <h5 className="card-title mb-0">Filtrar por Ubicación</h5>
-            </div>
-        
-          </div>
-        </div>
-      </div> */}
+  
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="d-flex justify-content-between align-items-center mt-4">

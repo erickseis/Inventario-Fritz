@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useData } from '../hooks/useData';
 import MetricCard from '../components/MetricCard';
 import SalesChart from '../components/SalesChart';
-import ProductionChart from '../components/ProductionChart';
-import { obtenerInventario, obtenerStockMin, obtenerMovimientoSKU } from '../service/connection';
+import { obtenerInventario, obtenerStockMin, obtenerMovimientoSKU, obtenerVendedores } from '../service/connection';
 import { useUser } from '../hooks/useUser';
+import { useInventarioSolicitudes } from '../hooks/useInventarioSolicitud.hook';
+import { DataMovimientosContext } from '../hooks/movimientos.context';
 
 
 const Dashboard = () => {
@@ -23,20 +23,25 @@ const Dashboard = () => {
       }
     }
   }, [user, navigate]);
-
+  const {dataArticulos} = useContext(DataMovimientosContext)
+  const {solicitudesInventario} = useInventarioSolicitudes()
   const [isLoading, setIsLoading] = useState(true);
-  const { data: productos } = useData('productos');
-  const { data: produccion } = useData('produccion');
-  const { data: solicitudes } = useData('solicitudes');
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [movimientosSKU, setMovimientosSKU] = useState([]);
   const [topItems, setTopItems] = useState([]);
   const [topMonths, setTopMonths] = useState(1); // 1,2,3,6,12
-  const [filteredProductos, setFilteredProductos] = useState([]);
-  const [filteredProduccion, setFilteredProduccion] = useState([]);
   const [dataInventario, setDataInventario] = useState([]);
   const [dataStockMinimo, setDataStockMinimo] = useState([]);
+  const [vendedores, setVendedores] = useState([]);
 
+  const fetchVendedores =async()=>{
+    try {
+      const data = await obtenerVendedores();
+      setVendedores(data);
+    } catch (error) {
+      console.error("Error al obtener vendedores", error);
+    }
+  }
   const fetchDataInventario = async () => {
     try {
       const data = await obtenerInventario();
@@ -60,8 +65,10 @@ const Dashboard = () => {
   useEffect(() => {
     fetchDataInventario();
     fetchStockMinimo();
-  }, [])
+    fetchVendedores();
 
+  }, [])
+console.log('vendedores',vendedores)
   const almacenes = [
     {co_alma: "7020", nombre: "Barquisimeto principal"},
     {co_alma: "8010", nombre: "Maracaibo (Occidente)"},
@@ -109,16 +116,7 @@ const Dashboard = () => {
     return stockDisponible === 0;
   }).length;
 
-  // Filtrar datos por ubicación
-  useEffect(() => {
-    if (selectedLocation === 'all') {
-      setFilteredProductos(productos);
-      setFilteredProduccion(produccion);
-    } else {
-      setFilteredProductos(productos.filter(p => p.ubicacion === selectedLocation));
-      setFilteredProduccion(produccion.filter(p => p.ubicacion === selectedLocation));
-    }
-  }, [selectedLocation, productos, produccion]);
+ 
 
   // Cargar movimientos por SKU (para top 5 más vendidos)
   useEffect(() => {
@@ -180,22 +178,16 @@ const Dashboard = () => {
       .slice(0, 5);
     setTopItems(lista);
   }, [movimientosSKU, dataInventario, topMonths]);
-
-  // Productos próximos a vencer (usando productos reales con fechas simuladas)
-  const productosConVencimiento = filteredProductos.map(producto => {
-    const fechaVencimiento = new Date();
-    fechaVencimiento.setDate(fechaVencimiento.getDate() + Math.floor(Math.random() * 60) - 30);
-    const diasParaVencer = Math.ceil((fechaVencimiento - new Date()) / (1000 * 60 * 60 * 24));
-    
-    return {
-      ...producto,
-      fecha_vencimiento: fechaVencimiento.toISOString().split('T')[0],
-      dias_para_vencer: diasParaVencer,
-      estado: diasParaVencer <= 0 ? 'Vencido' : 'Vence Pronto'
-    };
-  }).filter(p => p.estado !== 'Vigente' && p.dias_para_vencer <= 7)
-    .sort((a, b) => a.dias_para_vencer - b.dias_para_vencer)
-    .slice(0, 5);
+// arriba, después de tomar dataArticulos del context
+const articulosNombreMap = useMemo(() => {
+  if (!Array.isArray(dataArticulos)) return {};
+  const map = {};
+  for (const a of dataArticulos) {
+    const key = (a?.co_art || '').trim().toUpperCase();
+    if (key) map[key] = a?.art_des || '';
+  }
+  return map;
+}, [dataArticulos]);
 
   if(isLoading){
     return (
@@ -230,7 +222,7 @@ const Dashboard = () => {
               <h6 className="mb-0">Filtrar por Ubicación</h6>
             </div>
             <div className="card-body">
-              <div className="btn-group flex-wrap" role="group" aria-label="Filtros de ubicación">
+              <div className="d-flex btn-group flex-wrap" role="group" aria-label="Filtros de ubicación">
                 <button type="button" className={`btn btn-outline-primary ${selectedLocation === 'all' ? 'active' : ''}`} onClick={() => setSelectedLocation('all')}>
                   Todos
                 </button>
@@ -293,7 +285,7 @@ const Dashboard = () => {
 
       {/* Tabla de actividad reciente */}
       <div className="row">
-        <div className="col-lg-8 col-12 mb-4">
+        <div className="col-lg-12 col-12 mb-4">
           <div className="card shadow-sm">
             <div className="card-header bg-white d-flex align-items-center gap-2">
               <i className="bi bi-activity text-primary"></i>
@@ -312,20 +304,23 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {[...solicitudes]
-                      .sort((a, b) => new Date(`${b.fecha}T${b.hora || '00:00:00'}`) - new Date(`${a.fecha}T${a.hora || '00:00:00'}`))
+                    {[...solicitudesInventario]
+                      .sort((a, b) => new Date(`${b.fecha_solicitud}`) - new Date(`${a.fecha_solicitud}`))
                       .slice(0, 5)
                       .map((item) => (
                         <tr key={item.id}>
                           <td>
-                            {new Date(`${item.fecha}T${item.hora || '00:00:00'}`).toLocaleDateString()} {item.hora?.slice(0,5)}
+                            {new Date(`${item.fecha_solicitud}`).toLocaleDateString()} {item.hora?.slice(0,5)}
                           </td>
-                          <td>{item.vendedor}</td>
-                          <td>{item.sku}</td>
-                          <td>{item.cantidad}</td>
+                          <td>{`${item.codigo_vendedor} - ${vendedores.filter((ven)=> ven.co_ven === item.codigo_vendedor).map((ven)=> ven.ven_des)}`}</td>
+                          
                           <td>
-                            <span className={`badge ${item.requiere_aprobacion ? 'bg-warning text-dark' : 'bg-success'}`}>
-                              {item.requiere_aprobacion ? 'Pendiente' : 'Procesada'}
+                          <td>{`${item.sku_producto} - ${articulosNombreMap[item.sku_producto] || 'Producto no encontrado'}`}</td>
+</td>
+                          <td>{item.cantidad_solicitada}</td>
+                          <td>
+                            <span className={`badge ${item.estado_aprobacion === false ? 'bg-warning text-dark' : 'bg-success'}`}>
+                              {item.estado_aprobacion === false ? 'Pendiente' : 'Procesada'}
                             </span>
                           </td>
                         </tr>
@@ -337,45 +332,12 @@ const Dashboard = () => {
           </div>
         </div>
         
-        <div className="col-lg-4 col-12">
-          <div className="card shadow-sm">
-            <div className="card-header bg-white d-flex align-items-center gap-2">
-              <i className="bi bi-exclamation-triangle text-warning"></i>
-              <h6 className="mb-0">Productos próximos a vencer</h6>
-            </div>
-            <div className="card-body p-0">
-              <div className="table-responsive">
-                <table className="table table-sm table-striped table-hover align-middle mb-0">
-                  <thead className="bg-light">
-                    <tr>
-                      <th>Vencimiento</th>
-                      <th>Producto</th>
-                      <th>Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {productosConVencimiento.map((producto, index) => (
-                      <tr key={index}>
-                        <td>{new Date(producto.fecha_vencimiento).toLocaleDateString()}</td>
-                        <td className="text-truncate" style={{maxWidth: '120px'}}>{producto.nombre}</td>
-                        <td>
-                          <span className={`badge ${producto.estado === 'Vencido' ? 'bg-danger' : 'bg-warning'}`}>
-                            {producto.estado}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
+       
       </div>
       
       {/* Gráficos */}
       <div className="row">
-        <div className="col-lg-6 mb-4">
+        <div className="col-lg-12 mb-4">
           <div className="card shadow-sm">
             <div className="card-header bg-white d-flex align-items-center gap-2">
               <i className="bi bi-graph-up-arrow text-success"></i>
@@ -401,7 +363,7 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-        <div className="col-lg-6 mb-4">
+        {/* <div className="col-lg-6 mb-4">
           <div className="card shadow-sm">
             <div className="card-header bg-white d-flex align-items-center gap-2">
               <i className="bi bi-bar-chart-line text-info"></i>
@@ -411,7 +373,7 @@ const Dashboard = () => {
               <ProductionChart data={filteredProduccion} />
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

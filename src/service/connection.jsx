@@ -212,9 +212,29 @@ export const obtenerMovimientoDetalleFecha=async(fecha, co_art)=>{
     throw error;
   }
 }
+export const obtenerMovimientoFiltros=async(co_art, co_alma, fecha_inicio, fecha_fin)=>{
+  try {
+    const response = await api.get(`/inventario/movimientos/filtro_detalle/${co_art}/${co_alma}/${fecha_inicio}/${fecha_fin}`)
+    return response.data
+  } catch (error) {
+    console.error("Error al obtener movimientos:", error.message);
+    if (error.code === 'ECONNABORTED') {
+      console.error("Error: La conexión con el servidor tardó demasiado tiempo");
+    } else if (error.response?.status === 404) {
+      console.error("Error: El endpoint /movimientos/detalle no fue encontrado");
+    } else if (error.response?.status >= 500) {
+      console.error("Error: Problema en el servidor");
+    } else {
+      console.error("Error al obtener movimientos:", error.message);
+    }
+    throw error;
+  }
+}
+
+
 export const obtenerArticulos = async () => {
 try {
-  const response = await api.get('/articulos')
+  const response = await api.get('/articulos-full')
   return response.data
 } catch (error) {
   console.error("Error al obtener articulos:", error.message);
