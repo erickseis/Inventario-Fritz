@@ -35,6 +35,7 @@ console.log("cargos",cargos)
     { path: '/productos', label: 'Productos', icon: 'bi-box-seam' },
     { path: '/inventario', label: 'Inventario', icon: 'bi-archive' },
     { path: '/movimientos', label: 'Movimientos', icon: 'bi bi-arrow-left-right' },
+    { path: '/listas-carga', label: 'Listas de Carga', icon: 'bi bi-truck-front-fill' },
     { path: '/pronostico' ,label: 'Predictivo', icon: 'bi bi-graph-up' },
     // { href: '/st/' ,label: 'Pronóstico', icon: 'bi bi-graph-up' },
     { path: '/proveedores', label: 'Proveedores', icon: 'bi bi-truck' },

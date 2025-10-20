@@ -248,3 +248,69 @@ try {
   console.error("Error al obtener almacenes:", error.message);
 }
 }
+
+// LISTAS DE CARGA
+export const obtenerListasCarga = async (filtros = {}) => {
+  try {
+    const params = new URLSearchParams();
+    if (filtros.fechaDesde) params.append('fechaDesde', filtros.fechaDesde);
+    if (filtros.fechaHasta) params.append('fechaHasta', filtros.fechaHasta);
+    if (filtros.transporte) params.append('transporte', filtros.transporte);
+    
+    const response = await api.get(`/listas-carga?${params.toString()}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener listas de carga:", error.message);
+    throw error;
+  }
+}
+
+export const obtenerDetallesListaCarga = async (listaId) => {
+  try {
+    const response = await api.get(`/listas-carga/${listaId}/detalles`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener detalles de lista de carga:", error.message);
+    throw error;
+  }
+}
+
+export const agregarCantidad = async (listaId, itemId, cantidad) => {
+  try {
+    const response = await api.post(`/listas-carga/${listaId}/items/${itemId}/agregar`, { cantidad });
+    return response.data;
+  } catch (error) {
+    console.error("Error al agregar cantidad:", error.message);
+    throw error;
+  }
+}
+
+export const restarCantidad = async (listaId, itemId, cantidad) => {
+  try {
+    const response = await api.post(`/listas-carga/${listaId}/items/${itemId}/restar`, { cantidad });
+    return response.data;
+  } catch (error) {
+    console.error("Error al restar cantidad:", error.message);
+    throw error;
+  }
+}
+
+export const cerrarGuia = async (listaId) => {
+  try {
+    const response = await api.post(`/listas-carga/${listaId}/cerrar`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al cerrar guía:", error.message);
+    throw error;
+  }
+}
+
+export const crearListaCarga = async (data) => {
+  try {
+    const response = await api.post('/listas-carga', data);
+    return response.data;
+  } catch (error) {
+    console.error("Error al crear lista de carga:", error.message);
+    throw error;
+  }
+}
