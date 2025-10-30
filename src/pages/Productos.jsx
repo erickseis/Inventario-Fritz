@@ -1,13 +1,34 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { obtenerMovimientoSKU } from '../service/connection';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { obtenerMovimientoSKU, obtenerArticulosAppVentas, obtenerCuotas, guardarCuotasEnBatch } from '../service/connection';
 import FormModal from '../components/FormModal';
 import { obtenerInventario, obtenerStockMin } from '../service/connection';
 import { ModalObservacion } from '../components/ModalObservacion';
 import { DataMovimientosContext } from '../hooks/movimientos.context';
 import Select from 'react-select';
+import { useUser } from '../hooks/useUser';
 
 const Productos = () => {
   const {dataArticulos} = useContext(DataMovimientosContext)
+  const { user } = useUser();
+  const u = Array.isArray(user) ? user[0] : user;
+  const cargoNombre = u?.cargo_nombre?.toLowerCase() || '';
+  const departamentoNombre = u?.departamento_nombre?.toLowerCase() || '';
+  
+  // Debug: Ver datos del usuario
+  console.log('Usuario en Productos:', u);
+  console.log('Cargo nombre:', cargoNombre);
+  console.log('Departamento nombre:', departamentoNombre);
+  
+  // Determinar si el usuario es de Almacén/Logística o Distribución
+  // Almacén/Logística ven TODOS los productos
+  // Distribución y otros ven solo APP VENTAS
+  const esAlmacenLogistica = cargoNombre.includes('almacen') || 
+                             cargoNombre.includes('logistica') ||
+                             departamentoNombre.includes('almacen') ||
+                             departamentoNombre.includes('logistica');
+  
+  console.log('¿Es Almacén/Logística?:', esAlmacenLogistica);
+  
  const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -15,6 +36,7 @@ const Productos = () => {
   const [selectedEstado, setSelectedEstado] = useState('');
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc', or ''
   const [searchTerm, setSearchTerm] = useState('');
+  const [vistaComparativa, setVistaComparativa] = useState(false); // Toggle entre vista normal y comparativa
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 100;
   const [selectedLocation, setSelectedLocation] = useState('all');
@@ -22,6 +44,10 @@ const Productos = () => {
 const [dataStockMinimo, setDataStockMinimo] = useState([])
 const [showModalObservacion, setShowModalObservacion] = useState(false);
 const [observacion, setObservacion] = useState('');
+  const [articulosAppVentas, setArticulosAppVentas] = useState([]); // Lista de productos de APP VENTAS
+  const [selectedAlmacenesComparar, setSelectedAlmacenesComparar] = useState([]); // Almacenes seleccionados para comparar
+  const [cuotaSolicitada, setCuotaSolicitada] = useState({}); // Cuotas solicitadas por producto
+  const [cuotaEnviada, setCuotaEnviada] = useState({}); // Cuotas enviadas por producto
   // meses para promedio
   const [avgMonths, setAvgMonths] = useState(3);
   // mes base (YYYY-MM)
@@ -66,14 +92,128 @@ const fetchStockMinimo = async()=>{
     }
   }
 
+  const fetchArticulosAppVentas = async()=>{
+    try {
+      const data = await obtenerArticulosAppVentas()
+      setArticulosAppVentas(data)
+      setIsLoading(false)
+    } catch (error) {
+      console.error("Error al obtener articulos app ventas del servidor", error)
+      setIsLoading(false)
+    }
+  }
+
+  const fetchCuotas = useCallback(async()=>{
+    try {
+      const data = await obtenerCuotas()
+      // Convertir array de cuotas a objeto con uniqueKey (co_art_co_alma)
+      const cuotasSolicitadasMap = {}
+      const cuotasEnviadasMap = {}
+      
+      data.forEach(cuota => {
+        if (cuota.co_art) {
+          // Distribuir las cuotas a todas las filas (producto + almacén) del mismo producto
+          // Obtener todos los almacenes donde existe este producto
+          const productosEnAlmacenes = dataProductosAlmacenes.filter(
+            item => item.co_art === cuota.co_art
+          )
+          
+          if (productosEnAlmacenes.length > 0) {
+            // Crear entrada para cada combinación producto-almacén
+            productosEnAlmacenes.forEach(item => {
+              const uniqueKey = `${item.co_art}_${item.co_alma || 'default'}`
+              cuotasSolicitadasMap[uniqueKey] = cuota.cuota_solicitada || 0
+              cuotasEnviadasMap[uniqueKey] = cuota.cuota_enviada || 0
+            })
+          } else {
+            // Si no hay productos en almacenes (raro), usar solo co_art
+            cuotasSolicitadasMap[cuota.co_art] = cuota.cuota_solicitada || 0
+            cuotasEnviadasMap[cuota.co_art] = cuota.cuota_enviada || 0
+          }
+        }
+      })
+      
+      setCuotaSolicitada(cuotasSolicitadasMap)
+      setCuotaEnviada(cuotasEnviadasMap)
+    } catch (error) {
+      console.error("Error al obtener cuotas del servidor", error)
+    }
+  }, [dataProductosAlmacenes])
+
   useEffect(()=>{
     fetchDataProductosAlmacenes()
     fetchStockMinimo()
-  },[]) // Solo al montar el componente
+    // Solo cargar artículos app ventas si NO es almacén/logística
+    if (!esAlmacenLogistica) {
+      fetchArticulosAppVentas()
+    } else {
+      setIsLoading(false)
+    }
+  },[esAlmacenLogistica]) // Solo al montar el componente o cuando cambie el rol
+  
+  // Cargar cuotas después de tener dataProductosAlmacenes
+  useEffect(() => {
+    if (dataProductosAlmacenes.length > 0) {
+      fetchCuotas()
+    }
+  }, [dataProductosAlmacenes, fetchCuotas])
+
+  // Función para guardar las cuotas en el backend
+  const handleGuardarCuotas = async () => {
+    try {
+      // Consolidar cuotas por co_art (extraer de uniqueKey "co_art_co_alma")
+      const cuotasPorProducto = {}
+      
+      // Procesar cuotas solicitadas
+      Object.keys(cuotaSolicitada).forEach(uniqueKey => {
+        const co_art = uniqueKey.split('_')[0] // Extraer co_art del uniqueKey
+        if (!cuotasPorProducto[co_art]) {
+          cuotasPorProducto[co_art] = { cuota_solicitada: 0, cuota_enviada: 0 }
+        }
+        // Tomar el máximo valor si hay múltiples filas del mismo producto
+        cuotasPorProducto[co_art].cuota_solicitada = Math.max(
+          cuotasPorProducto[co_art].cuota_solicitada,
+          cuotaSolicitada[uniqueKey] || 0
+        )
+      })
+      
+      // Procesar cuotas enviadas
+      Object.keys(cuotaEnviada).forEach(uniqueKey => {
+        const co_art = uniqueKey.split('_')[0] // Extraer co_art del uniqueKey
+        if (!cuotasPorProducto[co_art]) {
+          cuotasPorProducto[co_art] = { cuota_solicitada: 0, cuota_enviada: 0 }
+        }
+        // Tomar el máximo valor si hay múltiples filas del mismo producto
+        cuotasPorProducto[co_art].cuota_enviada = Math.max(
+          cuotasPorProducto[co_art].cuota_enviada,
+          cuotaEnviada[uniqueKey] || 0
+        )
+      })
+      
+      // Preparar array de cuotas para enviar
+      const cuotasArray = Object.keys(cuotasPorProducto)
+        .filter(co_art => cuotasPorProducto[co_art].cuota_solicitada > 0 || cuotasPorProducto[co_art].cuota_enviada > 0)
+        .map(co_art => ({
+          co_art,
+          cuota_solicitada: cuotasPorProducto[co_art].cuota_solicitada,
+          cuota_enviada: cuotasPorProducto[co_art].cuota_enviada
+        }))
+      
+      if (cuotasArray.length > 0) {
+        await guardarCuotasEnBatch(cuotasArray)
+        alert('✅ Cuotas guardadas exitosamente')
+      } else {
+        alert('ℹ️ No hay cuotas para guardar')
+      }
+    } catch (error) {
+      console.error("Error al guardar cuotas:", error)
+      alert('❌ Error al guardar las cuotas')
+    }
+  }
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedCategoria, selectedEstado, selectedLocation]);
+  }, [searchTerm, selectedCategoria, selectedEstado, selectedLocation, vistaComparativa]);
 
 
   // Función helper para obtener stock mínimo desde dataStockMinimo
@@ -168,10 +308,65 @@ const fetchStockMinimo = async()=>{
      almacenes.map(almacen => String(almacen.co_alma).trim())
      :
      [String(selectedLocation).trim()];
+    
+    // Si es almacén/logística, NO filtrar por APP VENTAS (mostrar todos)
+    if (esAlmacenLogistica) {
+      return data.filter(item => {
+        const itemAlmacen = item.co_alma ? String(item.co_alma).trim() : '';
+        return codigosAlmacen.includes(itemAlmacen);
+      });
+    }
+    
+    // Si NO es almacén/logística, filtrar solo APP VENTAS
+    const codigosAppVentas = new Set(
+      articulosAppVentas.map(art => String(art.co_art || '').trim())
+    );
+    
     return data.filter(item => {
       const itemAlmacen = item.co_alma ? String(item.co_alma).trim() : '';
-      return codigosAlmacen.includes(itemAlmacen);
+      const itemCoArt = String(item.co_art || '').trim();
+      
+      // Filtrar por almacén y por productos de APP VENTAS
+      return codigosAlmacen.includes(itemAlmacen) && codigosAppVentas.has(itemCoArt);
     });
+  }
+
+  // Función para convertir datos a vista comparativa (pivot por almacén)
+  const convertirAVistaComparativa = (datos) => {
+    const productosMap = new Map();
+    
+    datos.forEach(item => {
+      const co_art = item.co_art?.trim();
+      if (!co_art) return;
+      
+      if (!productosMap.has(co_art)) {
+        productosMap.set(co_art, {
+          co_art: co_art,
+          art_des: item.art_des,
+          categoria_principal: item.categoria_principal,
+          campo2: item.campo2,
+          campo4: item.campo4,
+          es_app_ventas: item.es_app_ventas,
+          almacenes: {},
+          stock_min: null
+        });
+      }
+      
+      const producto = productosMap.get(co_art);
+      const almacen = item.co_alma?.trim();
+      
+      if (almacen) {
+        producto.almacenes[almacen] = {
+          stock_act: item.stock_act || 0,
+          stock_com: item.stock_com || 0,
+          stock_lle: item.stock_lle || 0,
+          stock_des: item.stock_des || 0,
+          stock_disponible: (item.stock_act || 0) - (item.stock_com || 0)
+        };
+      }
+    });
+    
+    return Array.from(productosMap.values());
   } 
   const columns = [
     { key: 'co_art', label: 'Código', sortable: true, render: (value) => (
@@ -200,7 +395,48 @@ const fetchStockMinimo = async()=>{
           {almacen ? almacen.nombre : cleanValue}
         </span>
       );
-    }},{ key: 'promedio', label: 'Promedio Movimiento', sortable: true, render: (value, producto) => {
+    }},
+    { key: 'cuota_solicitada', label: 'Cuota Solicitada', sortable: true, render: (value, producto) => {
+      // Usar combinación co_art + co_alma para identificar cada fila única
+      const uniqueKey = `${producto.co_art}_${producto.co_alma || 'default'}`;
+      const cuota = cuotaSolicitada[uniqueKey] || 0;
+      
+      return (
+        <input
+          type="number"
+          className="form-control form-control-sm text-center"
+          style={{width: '100px', display: 'inline-block'}}
+          value={cuota}
+          min="0"
+          onChange={(e) => {
+            const newValue = parseInt(e.target.value) || 0;
+            setCuotaSolicitada({...cuotaSolicitada, [uniqueKey]: newValue});
+          }}
+          placeholder="0"
+        />
+      );
+    }},
+    { key: 'cuota_enviada', label: 'Cuota Enviada', sortable: true, render: (value, producto) => {
+      // Usar combinación co_art + co_alma para identificar cada fila única
+      const uniqueKey = `${producto.co_art}_${producto.co_alma || 'default'}`;
+      const cuota = cuotaEnviada[uniqueKey] || 0;
+      
+      return (
+        <input
+          type="number"
+          className="form-control form-control-sm text-center"
+          style={{width: '100px', display: 'inline-block'}}
+          value={cuota}
+          min="0"
+          onChange={(e) => {
+            const newValue = parseInt(e.target.value) || 0;
+            setCuotaEnviada({...cuotaEnviada, [uniqueKey]: newValue});
+          }}
+          placeholder="0"
+        />
+      );
+    }},
+    { key: 'promedio', label: 'Promedio Movimiento', sortable: true, render: (value, producto) => {
       const promedio = getPromedioMensual(producto);
       if (promedio === null) return 'Sin datos';
       return (
@@ -210,6 +446,22 @@ const fetchStockMinimo = async()=>{
       );
     }}
   ];
+
+  // Determinar qué almacenes mostrar en vista comparativa
+  const almacenesAMostrar = vistaComparativa && selectedAlmacenesComparar.length > 0
+    ? almacenes.filter(alm => selectedAlmacenesComparar.includes(alm.co_alma))
+    : almacenes;
+
+  // Colores para cada almacén - Paleta azul claro y tonos fríos suaves
+  const almacenColors = {
+    '7020': { bg: '#e3f2fd', border: '#1976d2', text: '#0d47a1' }, // Azul claro
+    '8010': { bg: '#e0f2f1', border: '#00897b', text: '#004d40' }, // Verde agua
+    '8060': { bg: '#e8f5e9', border: '#43a047', text: '#1b5e20' }, // Verde menta
+    '8070': { bg: '#f1f8e9', border: '#7cb342', text: '#33691e' }, // Verde lima suave
+    '8090': { bg: '#e1f5fe', border: '#0288d1', text: '#01579b' }  // Azul cielo
+  };
+
+  // columnsComparativa se renderiza directamente en el JSX para mayor flexibilidad
 
   const formFields = [
     { name: 'art_des', label: 'Descripción', type: 'text', required: true },
@@ -263,17 +515,35 @@ const fetchStockMinimo = async()=>{
     return searchMatch && categoriaMatch && estadoMatch;
   });
 
+  // Determinar qué productos mostrar según la vista
+  const productosParaMostrar = vistaComparativa 
+    ? convertirAVistaComparativa(filteredProductos)
+    : filteredProductos;
+
   // Ordenar productos por stock disponible (stock_act - stock_com)
-  const sortedProductos = [...filteredProductos].sort((a, b) => {
-    const stockDisponibleA = Number(a.stock_act || 0) - Number(a.stock_com || 0);
-    const stockDisponibleB = Number(b.stock_act || 0) - Number(b.stock_com || 0);
-    
-    if (sortOrder === 'asc') {
-      return stockDisponibleA - stockDisponibleB;
-    } else if (sortOrder === 'desc') {
-      return stockDisponibleB - stockDisponibleA;
+  const sortedProductos = [...productosParaMostrar].sort((a, b) => {
+    if (vistaComparativa) {
+      // En vista comparativa, calcular stock total de todos los almacenes
+      const calcularStockTotal = (producto) => {
+        return Object.values(producto.almacenes || {}).reduce((total, alm) => {
+          return total + alm.stock_disponible;
+        }, 0);
+      };
+      const stockTotalA = calcularStockTotal(a);
+      const stockTotalB = calcularStockTotal(b);
+      
+      if (sortOrder === 'asc') return stockTotalA - stockTotalB;
+      if (sortOrder === 'desc') return stockTotalB - stockTotalA;
+      return 0;
+    } else {
+      // Vista normal
+      const stockDisponibleA = Number(a.stock_act || 0) - Number(a.stock_com || 0);
+      const stockDisponibleB = Number(b.stock_act || 0) - Number(b.stock_com || 0);
+      
+      if (sortOrder === 'asc') return stockDisponibleA - stockDisponibleB;
+      if (sortOrder === 'desc') return stockDisponibleB - stockDisponibleA;
+      return 0;
     }
-    return 0; // Sin ordenamiento
   });
 
   const toggleSortOrder = () => {
@@ -331,11 +601,20 @@ const fetchStockMinimo = async()=>{
     <div className="container py-3">
       <div className="card border-0 shadow-sm overflow-hidden mb-3">
         <div className="p-4 d-flex align-items-center justify-content-between" style={{background: 'linear-gradient(90deg, #6f42c1 0%, #b794f6 100%)'}}>
-          <div className="d-flex align-items-center gap-2 text-white">
+          <div className="d-flex align-items-center gap-3 text-white">
             <i className="bi bi-grid-3x3-gap"></i>
-            <h5 className="mb-0">Productos</h5>
+            <div>
+              <h5 className="mb-0">Productos</h5>
+              {!esAlmacenLogistica ? (
+                <span className="badge bg-success mt-1">Solo APP VENTAS</span>
+              ) : (
+                <span className="badge bg-info mt-1">Todos los Productos</span>
+              )}
+            </div>
           </div>
-          <small className="text-white-75">Consulta, filtra y gestiona el stock</small>
+          <small className="text-white-75">
+            {esAlmacenLogistica ? 'Vista Almacén/Logística' : 'Vista Distribución'}
+          </small>
         </div>
       </div>
 
@@ -427,9 +706,20 @@ const fetchStockMinimo = async()=>{
             </div>
           </div>
           <div className="mt-3">
-            <div className="d-flex align-items-center mb-2 gap-2">
-              <i className="bi bi-geo-alt text-danger"></i>
-              <span className="fw-semibold">Ubicación</span>
+            <div className="d-flex align-items-center justify-content-between mb-2">
+              <div className="d-flex align-items-center gap-2">
+                <i className="bi bi-geo-alt text-danger"></i>
+                <span className="fw-semibold">Ubicación</span>
+              </div>
+              <button 
+                type="button" 
+                className={`btn btn-sm ${vistaComparativa ? 'btn-success' : 'btn-outline-secondary'}`}
+                onClick={() => setVistaComparativa(!vistaComparativa)}
+                title="Cambiar a vista comparativa entre almacenes"
+              >
+                <i className={`bi ${vistaComparativa ? 'bi-table' : 'bi-grid-3x3'}`}></i>
+                {vistaComparativa ? ' Vista Comparativa' : ' Vista Normal'}
+              </button>
             </div>
             <div className=" d-flex  btn-group flex-wrap" role="group" aria-label="Filtros de ubicación">
               <button type="button" className={`btn btn-outline-primary ${selectedLocation === 'all' ? 'active' : ''}`} onClick={() => setSelectedLocation('all')}>
@@ -452,6 +742,50 @@ const fetchStockMinimo = async()=>{
               </button>
             </div>
           </div>
+
+          {/* Selección de almacenes para comparar */}
+          {vistaComparativa && (
+            <div className="mt-3">
+              <div className="d-flex align-items-center gap-2 mb-2">
+                <i className="bi bi-arrow-left-right text-primary"></i>
+                <span className="fw-semibold">Almacenes a Comparar</span>
+                <small className="text-muted">(Selecciona 2 o más para comparar)</small>
+              </div>
+              <div className="d-flex flex-wrap gap-2">
+                {almacenes.map(alm => (
+                  <div key={alm.co_alma} className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id={`alm-comp-${alm.co_alma}`}
+                      checked={selectedAlmacenesComparar.includes(alm.co_alma)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedAlmacenesComparar([...selectedAlmacenesComparar, alm.co_alma]);
+                        } else {
+                          setSelectedAlmacenesComparar(
+                            selectedAlmacenesComparar.filter(co => co !== alm.co_alma)
+                          );
+                        }
+                      }}
+                    />
+                    <label className="form-check-label" htmlFor={`alm-comp-${alm.co_alma}`}>
+                      {alm.nombre.split(' ')[0]}
+                    </label>
+                  </div>
+                ))}
+                {selectedAlmacenesComparar.length > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={() => setSelectedAlmacenesComparar([])}
+                  >
+                    Limpiar selección
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
   
@@ -504,74 +838,295 @@ const fetchStockMinimo = async()=>{
       {/* Tabla de productos */}
       <div className="card shadow-sm">
         <div className="card-header bg-white d-flex justify-content-between align-items-center">
-          <h6 className="mb-0 d-flex align-items-center gap-2"><i className="bi bi-boxes"></i>Listado de Productos</h6>
-          <small className="text-muted">Total filtrados: {filteredProductos.length}</small>
+          <h6 className="mb-0 d-flex align-items-center gap-2">
+            <i className="bi bi-boxes"></i>
+            {vistaComparativa ? 'Vista Comparativa por Almacén' : 'Listado de Productos'}
+          </h6>
+          <div className="d-flex align-items-center gap-3">
+            <button 
+              className="btn btn-success btn-sm d-flex align-items-center gap-2"
+              onClick={handleGuardarCuotas}
+              title="Guardar todas las cuotas modificadas"
+            >
+              <i className="bi bi-save"></i>
+              Guardar Cuotas
+            </button>
+            <small className="text-muted">Total filtrados: {sortedProductos.length}</small>
+          </div>
         </div>
         <div className="card-body p-0">
-          <div className="table-responsive">
-            <table className="table table-sm table-striped table-hover align-middle mb-0">
-              <thead style={{position:'sticky', top:0, zIndex:1}} className="bg-light">
-                <tr>
-                  {columns.map(column => (
-                    <th key={column.key}>{column.label}</th>
-                  ))}
-                  
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
+          <div className="table-responsive" style={{maxHeight: vistaComparativa ? '70vh' : 'none'}}>
+            <table className="table table-bordered align-middle mb-0" style={{
+              borderCollapse: vistaComparativa ? 'separate' : 'collapse',
+              borderSpacing: vistaComparativa ? '0' : '0'
+            }}>
+              <thead style={{position:'sticky', top:0, zIndex:100}}>
+                {vistaComparativa ? (
+                  <>
+                    <tr style={{backgroundColor: '#1565c0'}}>
+                      <th rowSpan="2" style={{verticalAlign: 'middle', color: 'white', backgroundColor: '#1565c0', borderRight: '3px solid #0d47a1', minWidth: '100px', padding: '12px'}}>Código</th>
+                      <th rowSpan="2" style={{verticalAlign: 'middle', color: 'white', backgroundColor: '#1565c0', borderRight: '3px solid #0d47a1', minWidth: '250px', padding: '12px'}}>Descripción</th>
+                      <th colSpan={almacenesAMostrar.length} style={{textAlign: 'center', color: 'white', backgroundColor: '#1565c0', borderRight: '3px solid #0d47a1', padding: '12px'}}>ALMACENES - Stock Disponible</th>
+                      {selectedAlmacenesComparar.length > 0 && selectedAlmacenesComparar.length < almacenes.length && (
+                        <th rowSpan="2" style={{verticalAlign: 'middle', color: 'white', backgroundColor: '#00897b', borderRight: '3px solid #0d47a1', minWidth: '110px', textAlign: 'center', padding: '12px'}}>
+                          <div className="d-flex flex-column align-items-center">
+                            <i className="bi bi-calculator mb-1" style={{fontSize: '1rem'}}></i>
+                            <span>Total Parcial</span>
+                            <small style={{fontSize: '0.7rem', opacity: 0.8}}>({selectedAlmacenesComparar.length} alm.)</small>
+                          </div>
+                        </th>
+                      )}
+                      <th rowSpan="2" style={{verticalAlign: 'middle', color: 'white', backgroundColor: '#1565c0', borderRight: '3px solid #0d47a1', minWidth: '100px', textAlign: 'center', padding: '12px'}}>Total General</th>
+                      <th colSpan="2" style={{textAlign: 'center', color: 'white', backgroundColor: '#1565c0', borderRight: '3px solid #0d47a1', padding: '12px'}}>CUOTAS</th>
+                      <th rowSpan="2" style={{verticalAlign: 'middle', color: 'white', backgroundColor: '#1565c0', borderRight: '3px solid #0d47a1', minWidth: '100px', textAlign: 'center', padding: '12px'}}>Promedio</th>
+                      <th rowSpan="2" style={{verticalAlign: 'middle', color: 'white', backgroundColor: '#1565c0', minWidth: '80px', padding: '12px'}}>Acciones</th>
+                    </tr>
+                    <tr style={{backgroundColor: '#64b5f6'}}>
+                      {almacenesAMostrar.map((alm, idx) => (
+                        <th key={alm.co_alma} style={{
+                          backgroundColor: almacenColors[alm.co_alma]?.bg || '#f5f5f5',
+                          color: almacenColors[alm.co_alma]?.text || '#000',
+                          borderLeft: `4px solid ${almacenColors[alm.co_alma]?.border || '#ccc'}`,
+                          borderRight: idx === almacenesAMostrar.length - 1 ? '3px solid #0d47a1' : '1px solid #ddd',
+                          borderTop: '1px solid #ddd',
+                          minWidth: '150px',
+                          padding: '12px 8px',
+                          textAlign: 'center',
+                          fontWeight: 'bold',
+                          fontSize: '0.85rem'
+                        }}>
+                          <div className="d-flex flex-column align-items-center">
+                            <i className="bi bi-building mb-1" style={{fontSize: '1.2rem'}}></i>
+                            <span>{alm.nombre.split('(')[0].trim()}</span>
+                            <small style={{fontSize: '0.7rem', opacity: 0.7}}>({alm.co_alma})</small>
+                          </div>
+                        </th>
+                      ))}
+                      <th style={{backgroundColor: '#e3f2fd', color: '#0d47a1', fontWeight: 'bold', textAlign: 'center', fontSize: '0.8rem', borderRight: '3px solid #0d47a1', padding: '12px', borderTop: '1px solid #ddd', border: '2px solid #64b5f6'}}>Solicitada</th>
+                      <th style={{backgroundColor: '#e0f2f1', color: '#004d40', fontWeight: 'bold', textAlign: 'center', fontSize: '0.8rem', borderRight: '3px solid #0d47a1', padding: '12px', borderTop: '1px solid #ddd', border: '2px solid #4db6ac'}}>Enviada</th>
+                    </tr>
+                  </>
+                ) : (
+                  <tr className="bg-light">
+                    {columns.map(column => (
+                      <th key={column.key}>{column.label}</th>
+                    ))}
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                )}
               </thead>
               <tbody>
-                {currentProducts.map((producto) => (
-                  <tr key={`${producto.co_art}-${producto.co_alma || 'all'}`}>
-                  {columns.map(column => (
-                      <td key={column.key}>
-                        {column.render 
-                          ? column.render(producto[column.key], producto) 
-                          : producto[column.key]}
-                      </td>
-                    ))}
-                    <td>
-                      {(() => {
-                        const stockDisponible = (producto.stock_act || 0) - (producto.stock_com || 0);
-                        const stockMinimoReal = getStockMinimo(producto.co_art) || producto.stock_minimo || 0;
-                        return (
-                          <span className={`badge ${
-                            stockDisponible === 0  ? 'bg-danger' : 
-                            stockMinimoReal > 0 && stockDisponible <= stockMinimoReal ? 'bg-warning' : 
-                            'bg-success'
-                          }`}>
-                            {stockDisponible === 0 ? 'Sin Stock' : 
-                             stockMinimoReal > 0 && stockDisponible <= stockMinimoReal ? 'Stock Bajo' : 
-                             'Disponible'}
-                          </span>
-                        );
-                      })()}
-                    </td>
-                    <td className='d-flex flex-row'>
-                      <button 
-                      title='Cambiar Stock Minimo'
-                        className="btn btn-sm btn-outline-primary me-1"
-                        onClick={() => handleEdit(producto)}
-                      >
-                        <i className="bi bi-pencil"></i>
-                      </button>
-                      <button 
-                      title='Ver Observaciones'
-                        className="btn btn-sm btn-outline-secondary me-1"
-                        onClick={() => {
-                          const match = dataStockMinimo.find(item => item.co_art === producto.co_art);
-                          if (match) {
-                            setObservacion(match);
+                {currentProducts.map((producto, rowIdx) => (
+                  <tr key={vistaComparativa ? producto.co_art : `${producto.co_art}-${producto.co_alma || 'all'}`} style={{
+                    backgroundColor: rowIdx % 2 === 0 ? '#ffffff' : '#f8f9fa'
+                  }}>
+                    {vistaComparativa ? (
+                      <>
+                        <td style={{borderRight: '3px solid #dee2e6', fontWeight: 'bold', backgroundColor: rowIdx % 2 === 0 ? '#ffffff' : '#f8f9fa'}}>
+                          <span className="badge bg-dark">{producto.co_art}</span>
+                        </td>
+                        <td style={{borderRight: '3px solid #dee2e6', backgroundColor: rowIdx % 2 === 0 ? '#ffffff' : '#f8f9fa'}}>
+                          <div style={{minWidth: '200px', maxWidth: '300px'}}>
+                            <strong>{producto.art_des}</strong>
+                            {producto.categoria_principal && (
+                              <div className="mt-1">
+                                <span className="badge bg-secondary" style={{fontSize: '0.7rem'}}>{producto.categoria_principal}</span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        {almacenesAMostrar.map((alm, idx) => {
+                          const almData = producto.almacenes?.[alm.co_alma];
+                          if (!almData) return (
+                            <td key={alm.co_alma} style={{
+                              backgroundColor: almacenColors[alm.co_alma]?.bg || '#f5f5f5',
+                              borderLeft: `4px solid ${almacenColors[alm.co_alma]?.border || '#ccc'}`,
+                              borderRight: idx === almacenesAMostrar.length - 1 ? '3px solid #dee2e6' : '1px solid #ddd',
+                              textAlign: 'center',
+                              opacity: 0.5
+                            }}>
+                              <span className="text-muted">—</span>
+                            </td>
+                          );
+                          
+                          const disponible = almData.stock_disponible;
+                          const stockMin = getStockMinimo(producto?.co_art?.trim()) || 0;
+                          
+                          let estadoColor, estadoIcon, estadoText;
+                          if (disponible === 0) {
+                            estadoColor = '#f44336';
+                            estadoIcon = 'bi-x-circle-fill';
+                            estadoText = 'SIN STOCK';
+                          } else if (stockMin > 0 && disponible <= stockMin) {
+                            estadoColor = '#ff9800';
+                            estadoIcon = 'bi-exclamation-triangle-fill';
+                            estadoText = 'CRÍTICO';
                           } else {
-                            setObservacion(producto);
+                            estadoColor = '#4caf50';
+                            estadoIcon = 'bi-check-circle-fill';
+                            estadoText = 'OK';
                           }
-                          handleShowModalObservacion();
-                        }}
-                      >
-                        <i className="bi bi-eye"></i>
-                      </button>
-                     
-                    </td>
+                          
+                          return (
+                            <td key={alm.co_alma} style={{
+                              backgroundColor: almacenColors[alm.co_alma]?.bg || '#f5f5f5',
+                              borderLeft: `4px solid ${almacenColors[alm.co_alma]?.border || '#ccc'}`,
+                              borderRight: idx === almacenesAMostrar.length - 1 ? '3px solid #dee2e6' : '1px solid #ddd',
+                              textAlign: 'center',
+                              padding: '12px 8px'
+                            }}>
+                              <div className="d-flex flex-column align-items-center gap-1">
+                                <div className="d-flex align-items-center gap-2">
+                                  <i className={`bi ${estadoIcon}`} style={{color: estadoColor, fontSize: '1rem'}}></i>
+                                  <span style={{
+                                    fontSize: '1.3rem',
+                                    fontWeight: 'bold',
+                                    color: almacenColors[alm.co_alma]?.text || '#000'
+                                  }}>
+                                    {formatNumber(disponible)}
+                                  </span>
+                                </div>
+                                <span className="badge" style={{
+                                  backgroundColor: estadoColor,
+                                  fontSize: '0.65rem',
+                                  padding: '0.25rem 0.6rem',
+                                  fontWeight: 'bold'
+                                }}>
+                                  {estadoText}
+                                </span>
+                              </div>
+                            </td>
+                          );
+                        })}
+                        {selectedAlmacenesComparar.length > 0 && selectedAlmacenesComparar.length < almacenes.length && (
+                          <td style={{textAlign: 'center', borderRight: '3px solid #dee2e6', backgroundColor: '#e0f7fa'}}>
+                            <div className="d-flex flex-column align-items-center">
+                              <span style={{fontSize: '1.3rem', fontWeight: 'bold', color: '#00838f'}}>
+                                {formatNumber(
+                                  almacenesAMostrar.reduce((sum, alm) => {
+                                    const almData = producto.almacenes?.[alm.co_alma];
+                                    return sum + (almData?.stock_disponible || 0);
+                                  }, 0)
+                                )}
+                              </span>
+                              <small className="text-muted" style={{fontSize: '0.7rem'}}>comparación</small>
+                            </div>
+                          </td>
+                        )}
+                        <td style={{textAlign: 'center', borderRight: '3px solid #dee2e6', backgroundColor: '#e8f5e9'}}>
+                          <div className="d-flex flex-column align-items-center">
+                            <span style={{fontSize: '1.4rem', fontWeight: 'bold', color: '#1565c0'}}>
+                              {formatNumber(Object.values(producto.almacenes || {}).reduce((sum, alm) => sum + alm.stock_disponible, 0))}
+                            </span>
+                            <small className="text-muted" style={{fontSize: '0.7rem'}}>todos los almacenes</small>
+                          </div>
+                        </td>
+                        <td style={{textAlign: 'center', backgroundColor: '#f1f8f4', borderRight: '1px solid #ddd'}}>
+                          <input
+                            type="number"
+                            className="form-control form-control-sm text-center"
+                            style={{width: '90px', margin: '0 auto', fontWeight: 'bold'}}
+                            value={cuotaSolicitada[producto.co_art] || ''}
+                            min="0"
+                            onChange={(e) => {
+                              const newValue = parseInt(e.target.value) || 0;
+                              setCuotaSolicitada({...cuotaSolicitada, [producto.co_art]: newValue});
+                            }}
+                            placeholder="0"
+                          />
+                        </td>
+                        <td style={{textAlign: 'center', backgroundColor: '#f0f7ff', borderRight: '3px solid #dee2e6'}}>
+                          <input
+                            type="number"
+                            className="form-control form-control-sm text-center"
+                            style={{width: '90px', margin: '0 auto', fontWeight: 'bold'}}
+                            value={cuotaEnviada[producto.co_art] || ''}
+                            min="0"
+                            onChange={(e) => {
+                              const newValue = parseInt(e.target.value) || 0;
+                              setCuotaEnviada({...cuotaEnviada, [producto.co_art]: newValue});
+                            }}
+                            placeholder="0"
+                          />
+                        </td>
+                        <td style={{textAlign: 'center', borderRight: '3px solid #dee2e6'}}>
+                          <span className="badge bg-info" style={{fontSize: '0.8rem'}}>
+                            {formatNumber(getPromedioMensual(producto) || 0)} un/mes
+                          </span>
+                        </td>
+                        <td style={{textAlign: 'center'}}>
+                          <button 
+                            title='Ver Observaciones'
+                            className="btn btn-sm btn-outline-secondary"
+                            onClick={() => {
+                              const match = dataStockMinimo.find(item => item.co_art === producto.co_art);
+                              if (match) {
+                                setObservacion(match);
+                              } else {
+                                setObservacion(producto);
+                              }
+                              handleShowModalObservacion();
+                            }}
+                          >
+                            <i className="bi bi-eye"></i>
+                          </button>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        {columns.map(column => (
+                          <td key={column.key}>
+                            {column.render 
+                              ? column.render(producto[column.key], producto) 
+                              : producto[column.key]}
+                          </td>
+                        ))}
+                        <td>
+                          {(() => {
+                            const stockDisponible = (producto.stock_act || 0) - (producto.stock_com || 0);
+                            const stockMinimoReal = getStockMinimo(producto.co_art) || producto.stock_minimo || 0;
+                            return (
+                              <span className={`badge ${
+                                stockDisponible === 0  ? 'bg-danger' : 
+                                stockMinimoReal > 0 && stockDisponible <= stockMinimoReal ? 'bg-warning' : 
+                                'bg-success'
+                              }`}>
+                                {stockDisponible === 0 ? 'Sin Stock' : 
+                                 stockMinimoReal > 0 && stockDisponible <= stockMinimoReal ? 'Stock Bajo' : 
+                                 'Disponible'}
+                              </span>
+                            );
+                          })()}
+                        </td>
+                        <td className='d-flex flex-row'>
+                          {esAlmacenLogistica && (
+                            <button 
+                              title='Cambiar Stock Minimo'
+                              className="btn btn-sm btn-outline-primary me-1"
+                              onClick={() => handleEdit(producto)}
+                            >
+                              <i className="bi bi-pencil"></i>
+                            </button>
+                          )}
+                          <button 
+                            title='Ver Observaciones'
+                            className="btn btn-sm btn-outline-secondary me-1"
+                            onClick={() => {
+                              const match = dataStockMinimo.find(item => item.co_art === producto.co_art);
+                              if (match) {
+                                setObservacion(match);
+                              } else {
+                                setObservacion(producto);
+                              }
+                              handleShowModalObservacion();
+                            }}
+                          >
+                            <i className="bi bi-eye"></i>
+                          </button>
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>

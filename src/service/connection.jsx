@@ -240,6 +240,23 @@ try {
   console.error("Error al obtener articulos:", error.message);
 }
 }
+
+export const obtenerArticulosAppVentas = async () => {
+  try {
+    const response = await api.get('/articulos-full/app-ventas')
+    return response.data
+  } catch (error) {
+    console.error("Error al obtener articulos app ventas:", error.message);
+    if (error.code === 'ECONNABORTED') {
+      console.error("Error: La conexión con el servidor tardó demasiado tiempo");
+    } else if (error.response?.status === 404) {
+      console.error("Error: El endpoint /articulos-full/app-ventas no fue encontrado");
+    } else if (error.response?.status >= 500) {
+      console.error("Error: Problema en el servidor");
+    }
+    return [];
+  }
+}
 export const obtenerAlmacenes = async () => {
 try {
   const response = await api.get('/almacenes')
@@ -247,4 +264,58 @@ try {
 } catch (error) {
   console.error("Error al obtener almacenes:", error.message);
 }
+}
+
+// CUOTAS - Gestión de cuotas solicitadas y enviadas
+export const obtenerCuotas = async () => {
+  try {
+    const response = await api.get('/cuotas')
+    return response.data
+  } catch (error) {
+    console.error("Error al obtener cuotas:", error.message);
+    return [];
+  }
+}
+
+export const obtenerCuotaPorArticulo = async (co_art) => {
+  try {
+    const response = await api.get(`/cuotas/${co_art}`)
+    return response.data
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return null; // No existe cuota para este artículo
+    }
+    console.error("Error al obtener cuota:", error.message);
+    return null;
+  }
+}
+
+export const guardarCuota = async (data) => {
+  try {
+    const response = await api.post('/cuotas', data)
+    return response.data
+  } catch (error) {
+    console.error("Error al guardar cuota:", error.message);
+    throw error;
+  }
+}
+
+export const guardarCuotasEnBatch = async (cuotas) => {
+  try {
+    const response = await api.post('/cuotas/batch', { cuotas })
+    return response.data
+  } catch (error) {
+    console.error("Error al guardar cuotas en batch:", error.message);
+    throw error;
+  }
+}
+
+export const eliminarCuota = async (co_art) => {
+  try {
+    const response = await api.delete(`/cuotas/${co_art}`)
+    return response.data
+  } catch (error) {
+    console.error("Error al eliminar cuota:", error.message);
+    throw error;
+  }
 }
