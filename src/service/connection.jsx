@@ -267,55 +267,78 @@ try {
 }
 
 // CUOTAS - Gestión de cuotas solicitadas y enviadas
-export const obtenerCuotas = async () => {
+export const obtenerCuotas = async (params = {}) => {
   try {
-    const response = await api.get('/cuotas')
-    return response.data
+    const query = new URLSearchParams();
+    if (params.periodo) query.append("periodo", params.periodo);
+    if (params.co_art) query.append("co_art", params.co_art);
+    if (params.co_alma) query.append("co_alma", params.co_alma);
+    if (params.includeHistorial) query.append("includeHistorial", "true");
+
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+    const response = await api.get(`/cuotas${suffix}`);
+    return response.data;
   } catch (error) {
     console.error("Error al obtener cuotas:", error.message);
     return [];
   }
-}
+};
 
-export const obtenerCuotaPorArticulo = async (co_art) => {
+export const obtenerCuotaPorArticulo = async (co_art, params = {}) => {
+  if (!co_art) return [];
   try {
-    const response = await api.get(`/cuotas/${co_art}`)
-    return response.data
+    const query = new URLSearchParams();
+    if (params.periodo) query.append("periodo", params.periodo);
+    if (params.includeHistorial) query.append("includeHistorial", "true");
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+
+    const response = await api.get(`/cuotas/${encodeURIComponent(String(co_art).trim())}${suffix}`);
+    const data = response.data;
+    if (Array.isArray(data)) return data;
+    return data ? [data] : [];
   } catch (error) {
     if (error.response?.status === 404) {
-      return null; // No existe cuota para este artículo
+      return [];
     }
     console.error("Error al obtener cuota:", error.message);
-    return null;
+    return [];
   }
-}
+};
 
 export const guardarCuota = async (data) => {
   try {
-    const response = await api.post('/cuotas', data)
-    return response.data
+    const response = await api.post("/cuotas", data);
+    return response.data;
   } catch (error) {
     console.error("Error al guardar cuota:", error.message);
     throw error;
   }
-}
+};
 
-export const guardarCuotasEnBatch = async (cuotas) => {
+export const guardarCuotasEnBatch = async ({ periodo, cuotas, nota } = {}) => {
   try {
-    const response = await api.post('/cuotas/batch', { cuotas })
-    return response.data
+    const payload = { cuotas };
+    if (periodo) payload.periodo = periodo;
+    if (nota) payload.nota = nota;
+    const response = await api.post("/cuotas/batch", payload);
+    return response.data;
   } catch (error) {
     console.error("Error al guardar cuotas en batch:", error.message);
     throw error;
   }
-}
+};
 
-export const eliminarCuota = async (co_art) => {
+export const eliminarCuota = async ({ co_art, co_alma, periodo } = {}) => {
+  if (!co_art) throw new Error("co_art es requerido para eliminar una cuota.");
   try {
-    const response = await api.delete(`/cuotas/${co_art}`)
-    return response.data
+    const query = new URLSearchParams();
+    if (co_alma) query.append("co_alma", co_alma);
+    if (periodo) query.append("periodo", periodo);
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+    const response = await api.delete(`/cuotas/${encodeURIComponent(String(co_art).trim())}${suffix}`);
+    return response.data;
   } catch (error) {
     console.error("Error al eliminar cuota:", error.message);
     throw error;
   }
-}
+};

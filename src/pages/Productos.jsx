@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { obtenerMovimientoSKU, obtenerArticulosAppVentas, obtenerCuotas, guardarCuotasEnBatch } from '../service/connection';
 import FormModal from '../components/FormModal';
 import { obtenerInventario, obtenerStockMin } from '../service/connection';
@@ -46,8 +46,11 @@ const [showModalObservacion, setShowModalObservacion] = useState(false);
 const [observacion, setObservacion] = useState('');
   const [articulosAppVentas, setArticulosAppVentas] = useState([]); // Lista de productos de APP VENTAS
   const [selectedAlmacenesComparar, setSelectedAlmacenesComparar] = useState([]); // Almacenes seleccionados para comparar
-  const [cuotaSolicitada, setCuotaSolicitada] = useState({}); // Cuotas solicitadas por producto
-  const [cuotaEnviada, setCuotaEnviada] = useState({}); // Cuotas enviadas por producto
+  const [cuotaSolicitada, setCuotaSolicitada] = useState({}); // Cuotas solicitadas por producto/almacén
+  const [cuotaEnviada, setCuotaEnviada] = useState({}); // Cuotas enviadas acumuladas por producto/almacén
+  const [cuotaSolicitadaOriginal, setCuotaSolicitadaOriginal] = useState({});
+  const [cuotaEnvioPendiente, setCuotaEnvioPendiente] = useState({});
+  const [cuotaHistorial, setCuotaHistorial] = useState({});
   // meses para promedio
   const [avgMonths, setAvgMonths] = useState(3);
   // mes base (YYYY-MM)
@@ -60,6 +63,9 @@ const [observacion, setObservacion] = useState('');
   // mapa de promedios por SKU (co_art)
   const [avgBySKU, setAvgBySKU] = useState({});
   const [movimientosAll, setMovimientosAll] = useState([]);
+  const tableScrollContainerRef = useRef(null);
+  const tableScrollMirrorWrapperRef = useRef(null);
+  const tableScrollMirrorRef = useRef(null);
 
 const handleShowModalObservacion = () => {
   setShowModalObservacion(!showModalObservacion);
@@ -71,6 +77,9 @@ const handleShowModalObservacion = () => {
     {co_alma: "8070", nombre: "Santa Cruz (Estado Aragua Centro)"},
     {co_alma: "8090", nombre: "Prueba Piloto Capital"}
   ]
+  const compactInputStyle = { width: '70px', minWidth: '70px', height: '32px', padding: '0 8px', fontSize: '0.8rem' };
+  const compactMetricStyle = { fontSize: '0.78rem' };
+  const compactBadgeStyle = { fontSize: '0.65rem', padding: '0.2rem 0.45rem' };
 const fetchStockMinimo = async()=>{
   try {
     const data = await obtenerStockMin()
@@ -103,42 +112,98 @@ const fetchStockMinimo = async()=>{
     }
   }
 
+  const buildQuotaKey = (coArt, coAlma) => {
+    const art = String(coArt || '').trim();
+    if (!art) return '';
+    const alma = String(coAlma || '').trim();
+    return `${art}__${alma || 'GLOBAL'}`;
+  };
+
+  const parseQuotaKey = (key) => {
+    const [coArt, ...rest] = String(key || '').split('__');
+    const coAlmaRaw = rest.join('__');
+    return {
+      coArt: coArt || '',
+      coAlma: coAlmaRaw === 'GLOBAL' ? '' : coAlmaRaw,
+    };
+  };
+
+  const formatShortDateTime = (value) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toLocaleString('es-VE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const handleCuotaSolicitadaChange = (key, value) => {
+    if (!key) return;
+    const sanitized = Math.max(0, Math.trunc(Number(value) || 0));
+    setCuotaSolicitada((prev) => ({
+      ...prev,
+      [key]: sanitized,
+    }));
+  };
+
+  const handleCuotaEnvioPendienteChange = (key, rawValue) => {
+    if (!key) return;
+    if (rawValue === '' || rawValue === null || rawValue === undefined) {
+      setCuotaEnvioPendiente((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+      return;
+    }
+    const sanitized = Math.max(0, Math.trunc(Number(rawValue) || 0));
+    setCuotaEnvioPendiente((prev) => ({
+      ...prev,
+      [key]: sanitized,
+    }));
+  };
+
   const fetchCuotas = useCallback(async()=>{
     try {
-      const data = await obtenerCuotas()
-      // Convertir array de cuotas a objeto con uniqueKey (co_art_co_alma)
-      const cuotasSolicitadasMap = {}
-      const cuotasEnviadasMap = {}
-      
-      data.forEach(cuota => {
-        if (cuota.co_art) {
-          // Distribuir las cuotas a todas las filas (producto + almacén) del mismo producto
-          // Obtener todos los almacenes donde existe este producto
-          const productosEnAlmacenes = dataProductosAlmacenes.filter(
-            item => item.co_art === cuota.co_art
-          )
-          
-          if (productosEnAlmacenes.length > 0) {
-            // Crear entrada para cada combinación producto-almacén
-            productosEnAlmacenes.forEach(item => {
-              const uniqueKey = `${item.co_art}_${item.co_alma || 'default'}`
-              cuotasSolicitadasMap[uniqueKey] = cuota.cuota_solicitada || 0
-              cuotasEnviadasMap[uniqueKey] = cuota.cuota_enviada || 0
-            })
-          } else {
-            // Si no hay productos en almacenes (raro), usar solo co_art
-            cuotasSolicitadasMap[cuota.co_art] = cuota.cuota_solicitada || 0
-            cuotasEnviadasMap[cuota.co_art] = cuota.cuota_enviada || 0
-          }
+      const data = await obtenerCuotas({
+        periodo: baseMonth,
+        includeHistorial: true,
+      });
+
+      const cuotasSolicitadasMap = {};
+      const cuotasSolicitadasOriginalMap = {};
+      const cuotasEnviadasMap = {};
+      const historialMap = {};
+
+      data.forEach((cuota) => {
+        if (!cuota?.co_art) return;
+        const key = buildQuotaKey(cuota.co_art, cuota.co_alma);
+        if (!key) return;
+        const solicitada = Number(cuota.cuota_solicitada || 0);
+        const enviada = Number(cuota.cuota_enviada_total || 0);
+
+        cuotasSolicitadasMap[key] = solicitada;
+        cuotasSolicitadasOriginalMap[key] = solicitada;
+        cuotasEnviadasMap[key] = enviada;
+        if (Array.isArray(cuota.historial)) {
+          historialMap[key] = cuota.historial;
         }
-      })
-      
-      setCuotaSolicitada(cuotasSolicitadasMap)
-      setCuotaEnviada(cuotasEnviadasMap)
+      });
+
+      setCuotaSolicitada(cuotasSolicitadasMap);
+      setCuotaSolicitadaOriginal(cuotasSolicitadasOriginalMap);
+      setCuotaEnviada(cuotasEnviadasMap);
+      setCuotaEnvioPendiente({});
+      setCuotaHistorial(historialMap);
     } catch (error) {
       console.error("Error al obtener cuotas del servidor", error)
     }
-  }, [dataProductosAlmacenes])
+  }, [baseMonth])
+
 
   useEffect(()=>{
     fetchDataProductosAlmacenes()
@@ -161,50 +226,47 @@ const fetchStockMinimo = async()=>{
   // Función para guardar las cuotas en el backend
   const handleGuardarCuotas = async () => {
     try {
-      // Consolidar cuotas por co_art (extraer de uniqueKey "co_art_co_alma")
-      const cuotasPorProducto = {}
-      
-      // Procesar cuotas solicitadas
-      Object.keys(cuotaSolicitada).forEach(uniqueKey => {
-        const co_art = uniqueKey.split('_')[0] // Extraer co_art del uniqueKey
-        if (!cuotasPorProducto[co_art]) {
-          cuotasPorProducto[co_art] = { cuota_solicitada: 0, cuota_enviada: 0 }
+      const keys = new Set([
+        ...Object.keys(cuotaSolicitada),
+        ...Object.keys(cuotaEnvioPendiente),
+      ]);
+
+      const cuotasPayload = [];
+
+      keys.forEach((key) => {
+        if (!key) return;
+        const { coArt, coAlma } = parseQuotaKey(key);
+        if (!coArt || !coAlma) return;
+
+        const solicitadaActual = Number(cuotaSolicitada[key] ?? 0);
+        const solicitadaOriginal = Number(cuotaSolicitadaOriginal[key] ?? 0);
+        const incremento = Number(cuotaEnvioPendiente[key] ?? 0);
+
+        const cambioSolicitada = solicitadaActual !== solicitadaOriginal;
+        const hayIncremento = Number.isFinite(incremento) && incremento > 0;
+
+        if (cambioSolicitada || hayIncremento) {
+          cuotasPayload.push({
+            co_art: coArt,
+            co_alma: coAlma,
+            cuota_solicitada: cambioSolicitada ? solicitadaActual : undefined,
+            cuota_enviada_incremento: hayIncremento ? incremento : undefined,
+          });
         }
-        // Tomar el máximo valor si hay múltiples filas del mismo producto
-        cuotasPorProducto[co_art].cuota_solicitada = Math.max(
-          cuotasPorProducto[co_art].cuota_solicitada,
-          cuotaSolicitada[uniqueKey] || 0
-        )
-      })
-      
-      // Procesar cuotas enviadas
-      Object.keys(cuotaEnviada).forEach(uniqueKey => {
-        const co_art = uniqueKey.split('_')[0] // Extraer co_art del uniqueKey
-        if (!cuotasPorProducto[co_art]) {
-          cuotasPorProducto[co_art] = { cuota_solicitada: 0, cuota_enviada: 0 }
-        }
-        // Tomar el máximo valor si hay múltiples filas del mismo producto
-        cuotasPorProducto[co_art].cuota_enviada = Math.max(
-          cuotasPorProducto[co_art].cuota_enviada,
-          cuotaEnviada[uniqueKey] || 0
-        )
-      })
-      
-      // Preparar array de cuotas para enviar
-      const cuotasArray = Object.keys(cuotasPorProducto)
-        .filter(co_art => cuotasPorProducto[co_art].cuota_solicitada > 0 || cuotasPorProducto[co_art].cuota_enviada > 0)
-        .map(co_art => ({
-          co_art,
-          cuota_solicitada: cuotasPorProducto[co_art].cuota_solicitada,
-          cuota_enviada: cuotasPorProducto[co_art].cuota_enviada
-        }))
-      
-      if (cuotasArray.length > 0) {
-        await guardarCuotasEnBatch(cuotasArray)
-        alert('✅ Cuotas guardadas exitosamente')
-      } else {
-        alert('ℹ️ No hay cuotas para guardar')
+      });
+
+      if (cuotasPayload.length === 0) {
+        alert('ℹ️ No hay cambios de cuotas para guardar');
+        return;
       }
+
+      await guardarCuotasEnBatch({
+        periodo: baseMonth,
+        cuotas: cuotasPayload,
+      });
+
+      await fetchCuotas();
+      alert('✅ Cuotas guardadas exitosamente');
     } catch (error) {
       console.error("Error al guardar cuotas:", error)
       alert('❌ Error al guardar las cuotas')
@@ -396,44 +458,61 @@ const fetchStockMinimo = async()=>{
         </span>
       );
     }},
-    { key: 'cuota_solicitada', label: 'Cuota Solicitada', sortable: true, render: (value, producto) => {
-      // Usar combinación co_art + co_alma para identificar cada fila única
-      const uniqueKey = `${producto.co_art}_${producto.co_alma || 'default'}`;
-      const cuota = cuotaSolicitada[uniqueKey] || 0;
-      
+    { key: 'cuota_solicitada', label: 'Cuota mensual', sortable: false, render: (value, producto) => {
+      const uniqueKey = buildQuotaKey(producto.co_art, producto.co_alma);
+      if (!uniqueKey) return '—';
+      const cuota = cuotaSolicitada[uniqueKey] ?? 0;
+
       return (
-        <input
-          type="number"
-          className="form-control form-control-sm text-center"
-          style={{width: '100px', display: 'inline-block'}}
-          value={cuota}
-          min="0"
-          onChange={(e) => {
-            const newValue = parseInt(e.target.value) || 0;
-            setCuotaSolicitada({...cuotaSolicitada, [uniqueKey]: newValue});
-          }}
-          placeholder="0"
-        />
+        <div className="d-flex justify-content-center">
+          <input
+            type="number"
+            className="form-control form-control-sm text-center"
+            style={compactInputStyle}
+            value={cuota}
+            min="0"
+            onChange={(e) => handleCuotaSolicitadaChange(uniqueKey, e.target.value)}
+            placeholder="0"
+          />
+        </div>
       );
     }},
-    { key: 'cuota_enviada', label: 'Cuota Enviada', sortable: true, render: (value, producto) => {
-      // Usar combinación co_art + co_alma para identificar cada fila única
-      const uniqueKey = `${producto.co_art}_${producto.co_alma || 'default'}`;
-      const cuota = cuotaEnviada[uniqueKey] || 0;
-      
+    { key: 'cuota_enviada_total', label: 'Avance', sortable: false, render: (value, producto) => {
+      const uniqueKey = buildQuotaKey(producto.co_art, producto.co_alma);
+      if (!uniqueKey) return '—';
+      const solicitada = Number(cuotaSolicitada[uniqueKey] || 0);
+      const enviada = Number(cuotaEnviada[uniqueKey] || 0);
+      const porcentaje = solicitada > 0 ? Math.round((enviada / solicitada) * 100) : 0;
+
       return (
-        <input
-          type="number"
-          className="form-control form-control-sm text-center"
-          style={{width: '100px', display: 'inline-block'}}
-          value={cuota}
-          min="0"
-          onChange={(e) => {
-            const newValue = parseInt(e.target.value) || 0;
-            setCuotaEnviada({...cuotaEnviada, [uniqueKey]: newValue});
-          }}
-          placeholder="0"
-        />
+        <div className="text-center" style={{minWidth: '90px', fontSize: '0.78rem'}}>
+          <span className="fw-semibold text-dark">{formatNumber(enviada)}</span>
+          <span className="text-muted"> / {formatNumber(solicitada || 0)}</span>
+          {solicitada > 0 && (
+            <div className="text-muted" style={{fontSize: '0.7rem'}}>
+              {porcentaje}% cumplido
+            </div>
+          )}
+        </div>
+      );
+    }},
+    { key: 'cuota_envio_incremento', label: 'Enviar', sortable: false, render: (value, producto) => {
+      const uniqueKey = buildQuotaKey(producto.co_art, producto.co_alma);
+      if (!uniqueKey) return '—';
+      const incremento = cuotaEnvioPendiente[uniqueKey] ?? '';
+
+      return (
+        <div className="d-flex justify-content-center">
+          <input
+            type="number"
+            className="form-control form-control-sm text-center"
+            style={compactInputStyle}
+            value={incremento}
+            min="0"
+            onChange={(e) => handleCuotaEnvioPendienteChange(uniqueKey, e.target.value)}
+            placeholder="+"
+          />
+        </div>
       );
     }},
     { key: 'promedio', label: 'Promedio Movimiento', sortable: true, render: (value, producto) => {
@@ -559,6 +638,47 @@ const fetchStockMinimo = async()=>{
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentProducts = sortedProductos.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    const updateMirrorWidth = () => {
+      if (!tableScrollContainerRef.current || !tableScrollMirrorRef.current) return;
+      const tableElement = tableScrollContainerRef.current.querySelector('table');
+      const width = tableElement ? tableElement.scrollWidth : tableScrollContainerRef.current.scrollWidth;
+      tableScrollMirrorRef.current.style.width = `${width}px`;
+    };
+
+    updateMirrorWidth();
+
+    let resizeObserver;
+    let observedElement;
+
+    if (typeof ResizeObserver !== 'undefined' && tableScrollContainerRef.current) {
+      observedElement = tableScrollContainerRef.current.querySelector('table') || tableScrollContainerRef.current;
+      resizeObserver = new ResizeObserver(() => updateMirrorWidth());
+      resizeObserver.observe(observedElement);
+    } else {
+      window.addEventListener('resize', updateMirrorWidth);
+    }
+
+    return () => {
+      if (resizeObserver && observedElement) {
+        resizeObserver.unobserve(observedElement);
+        resizeObserver.disconnect();
+      } else {
+        window.removeEventListener('resize', updateMirrorWidth);
+      }
+    };
+  }, [vistaComparativa, sortedProductos.length, selectedAlmacenesComparar.length]);
+
+  const handleTableScroll = (event) => {
+    if (!tableScrollMirrorWrapperRef.current) return;
+    tableScrollMirrorWrapperRef.current.scrollLeft = event.target.scrollLeft;
+  };
+
+  const handleMirrorScroll = (event) => {
+    if (!tableScrollContainerRef.current) return;
+    tableScrollContainerRef.current.scrollLeft = event.target.scrollLeft;
+  };
 
   const handleNextPage = () => {
     if (currentPage < totalPages) {
@@ -855,7 +975,28 @@ const fetchStockMinimo = async()=>{
           </div>
         </div>
         <div className="card-body p-0">
-          <div className="table-responsive" style={{maxHeight: vistaComparativa ? '70vh' : 'none'}}>
+          <div
+            ref={tableScrollMirrorWrapperRef}
+            onScroll={handleMirrorScroll}
+            style={{
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              marginBottom: '0.5rem',
+              maxWidth: '100%',
+              height: '18px'
+            }}
+          >
+            <div ref={tableScrollMirrorRef} style={{ height: '1px', pointerEvents: 'none' }} />
+          </div>
+          <div
+            className="table-responsive"
+            ref={tableScrollContainerRef}
+            onScroll={handleTableScroll}
+            style={{
+              maxHeight: vistaComparativa ? '70vh' : 'none',
+              overflowX: 'auto'
+            }}
+          >
             <table className="table table-bordered align-middle mb-0" style={{
               borderCollapse: vistaComparativa ? 'separate' : 'collapse',
               borderSpacing: vistaComparativa ? '0' : '0'
@@ -917,16 +1058,38 @@ const fetchStockMinimo = async()=>{
                 )}
               </thead>
               <tbody>
-                {currentProducts.map((producto, rowIdx) => (
-                  <tr key={vistaComparativa ? producto.co_art : `${producto.co_art}-${producto.co_alma || 'all'}`} style={{
-                    backgroundColor: rowIdx % 2 === 0 ? '#ffffff' : '#f8f9fa'
-                  }}>
-                    {vistaComparativa ? (
-                      <>
-                        <td style={{borderRight: '3px solid #dee2e6', fontWeight: 'bold', backgroundColor: rowIdx % 2 === 0 ? '#ffffff' : '#f8f9fa'}}>
+                {currentProducts.map((producto, rowIdx) => {
+                  const rowBackground = rowIdx % 2 === 0 ? '#ffffff' : '#f8f9fa';
+
+                  if (vistaComparativa) {
+                    const keysForTotals = almacenesAMostrar
+                      .map((alm) => buildQuotaKey(producto.co_art, alm.co_alma))
+                      .filter(Boolean);
+
+                    const totalSolicitada = keysForTotals.reduce(
+                      (acc, key) => acc + Number(cuotaSolicitada[key] || 0),
+                      0
+                    );
+                    const totalEnviada = keysForTotals.reduce(
+                      (acc, key) => acc + Number(cuotaEnviada[key] || 0),
+                      0
+                    );
+                    const totalPendiente = Math.max(0, totalSolicitada - totalEnviada);
+                    const totalIncrementoPendiente = keysForTotals.reduce(
+                      (acc, key) => acc + Number(cuotaEnvioPendiente[key] || 0),
+                      0
+                    );
+                    const totalPorcentaje =
+                      totalSolicitada > 0
+                        ? Math.min(100, Math.round((totalEnviada / totalSolicitada) * 100))
+                        : 0;
+
+                    return (
+                      <tr key={producto.co_art} style={{ backgroundColor: rowBackground }}>
+                        <td style={{borderRight: '3px solid #dee2e6', fontWeight: 'bold', backgroundColor: rowBackground}}>
                           <span className="badge bg-dark">{producto.co_art}</span>
                         </td>
-                        <td style={{borderRight: '3px solid #dee2e6', backgroundColor: rowIdx % 2 === 0 ? '#ffffff' : '#f8f9fa'}}>
+                        <td style={{borderRight: '3px solid #dee2e6', backgroundColor: rowBackground}}>
                           <div style={{minWidth: '200px', maxWidth: '300px'}}>
                             <strong>{producto.art_des}</strong>
                             {producto.categoria_principal && (
@@ -937,118 +1100,147 @@ const fetchStockMinimo = async()=>{
                           </div>
                         </td>
                         {almacenesAMostrar.map((alm, idx) => {
+                          const quotaKey = buildQuotaKey(producto.co_art, alm.co_alma);
                           const almData = producto.almacenes?.[alm.co_alma];
-                          if (!almData) return (
-                            <td key={alm.co_alma} style={{
-                              backgroundColor: almacenColors[alm.co_alma]?.bg || '#f5f5f5',
-                              borderLeft: `4px solid ${almacenColors[alm.co_alma]?.border || '#ccc'}`,
-                              borderRight: idx === almacenesAMostrar.length - 1 ? '3px solid #dee2e6' : '1px solid #ddd',
-                              textAlign: 'center',
-                              opacity: 0.5
-                            }}>
-                              <span className="text-muted">—</span>
-                            </td>
-                          );
-                          
-                          const disponible = almData.stock_disponible;
-                          const stockMin = getStockMinimo(producto?.co_art?.trim()) || 0;
-                          
-                          let estadoColor, estadoIcon, estadoText;
-                          if (disponible === 0) {
-                            estadoColor = '#f44336';
-                            estadoIcon = 'bi-x-circle-fill';
-                            estadoText = 'SIN STOCK';
-                          } else if (stockMin > 0 && disponible <= stockMin) {
-                            estadoColor = '#ff9800';
-                            estadoIcon = 'bi-exclamation-triangle-fill';
-                            estadoText = 'CRÍTICO';
-                          } else {
-                            estadoColor = '#4caf50';
-                            estadoIcon = 'bi-check-circle-fill';
-                            estadoText = 'OK';
+                          const solicitada = Number(cuotaSolicitada[quotaKey] || 0);
+                          const enviada = Number(cuotaEnviada[quotaKey] || 0);
+                          const pendienteEnvio = Number(cuotaEnvioPendiente[quotaKey] || 0);
+                          const restante = Math.max(0, solicitada - enviada);
+                          const historialLocal = cuotaHistorial[quotaKey] || [];
+                          const ultimoEnvio = historialLocal.length > 0
+                            ? formatShortDateTime(historialLocal[0]?.fecha_envio)
+                            : null;
+
+                          if (!almData) {
+                            return (
+                              <td
+                                key={alm.co_alma}
+                                style={{
+                                  backgroundColor: almacenColors[alm.co_alma]?.bg || '#f5f5f5',
+                                  borderLeft: `4px solid ${almacenColors[alm.co_alma]?.border || '#ccc'}`,
+                                  borderRight: idx === almacenesAMostrar.length - 1 ? '3px solid #dee2e6' : '1px solid #ddd',
+                                  textAlign: 'center',
+                                  padding: '12px 8px'
+                                }}
+                              >
+                                <div className="text-muted" style={compactMetricStyle}>—</div>
+                              </td>
+                            );
                           }
-                          
+
+                          const disponible = Number(almData?.stock_disponible || 0);
+                          const stockMin = getStockMinimo(producto?.co_art?.trim()) || 0;
+
+                          let estadoClass = 'bg-success text-white';
+                          let estadoLabel = 'Disponible';
+                          if (disponible === 0) {
+                            estadoClass = 'bg-danger text-white';
+                            estadoLabel = 'Sin stock';
+                          } else if (stockMin > 0 && disponible <= stockMin) {
+                            estadoClass = 'bg-warning text-dark';
+                            estadoLabel = 'Stock bajo';
+                          }
+
                           return (
-                            <td key={alm.co_alma} style={{
-                              backgroundColor: almacenColors[alm.co_alma]?.bg || '#f5f5f5',
-                              borderLeft: `4px solid ${almacenColors[alm.co_alma]?.border || '#ccc'}`,
-                              borderRight: idx === almacenesAMostrar.length - 1 ? '3px solid #dee2e6' : '1px solid #ddd',
-                              textAlign: 'center',
-                              padding: '12px 8px'
-                            }}>
-                              <div className="d-flex flex-column align-items-center gap-1">
-                                <div className="d-flex align-items-center gap-2">
-                                  <i className={`bi ${estadoIcon}`} style={{color: estadoColor, fontSize: '1rem'}}></i>
-                                  <span style={{
-                                    fontSize: '1.3rem',
-                                    fontWeight: 'bold',
-                                    color: almacenColors[alm.co_alma]?.text || '#000'
-                                  }}>
+                            <td
+                              key={alm.co_alma}
+                              style={{
+                                backgroundColor: almacenColors[alm.co_alma]?.bg || '#f5f5f5',
+                                borderLeft: `4px solid ${almacenColors[alm.co_alma]?.border || '#ccc'}`,
+                                borderRight: idx === almacenesAMostrar.length - 1 ? '3px solid #dee2e6' : '1px solid #ddd',
+                                textAlign: 'center',
+                                padding: '12px 8px'
+                              }}
+                            >
+                              <div className="d-flex flex-column gap-2" style={compactMetricStyle}>
+                                <div className="d-flex flex-column align-items-center">
+                                  <span
+                                    className="fw-bold text-primary"
+                                    style={{ fontSize: '1.1rem', lineHeight: 1.1 }}
+                                  >
                                     {formatNumber(disponible)}
                                   </span>
+                                  <span
+                                    className={`badge rounded-pill ${estadoClass}`}
+                                    style={{ ...compactBadgeStyle, fontSize: '0.75rem', padding: '0.3rem 0.7rem' }}
+                                  >
+                                    {estadoLabel}
+                                  </span>
                                 </div>
-                                <span className="badge" style={{
-                                  backgroundColor: estadoColor,
-                                  fontSize: '0.65rem',
-                                  padding: '0.25rem 0.6rem',
-                                  fontWeight: 'bold'
-                                }}>
-                                  {estadoText}
-                                </span>
+                                <div className="text-muted">
+                                  Enviado / Meta:&nbsp;
+                                  <span className="fw-semibold text-dark">
+                                    {formatNumber(enviada)}
+                                  </span>
+                                  &nbsp;/ {formatNumber(solicitada || 0)}
+                                </div>
+                                {restante > 0 && (
+                                  <div className="text-warning" style={{ fontSize: '0.7rem' }}>
+                                    Pendiente: {formatNumber(restante)}
+                                  </div>
+                                )}
+                                {pendienteEnvio > 0 && (
+                                  <div className="text-muted" style={{ fontSize: '0.7rem' }}>
+                                    Próx. envío programado: +{formatNumber(pendienteEnvio)}
+                                  </div>
+                                )}
+                                {ultimoEnvio && (
+                                  <div className="text-muted" style={{ fontSize: '0.7rem' }}>
+                                    Último envío: {ultimoEnvio}
+                                  </div>
+                                )}
                               </div>
                             </td>
                           );
                         })}
                         {selectedAlmacenesComparar.length > 0 && selectedAlmacenesComparar.length < almacenes.length && (
                           <td style={{textAlign: 'center', borderRight: '3px solid #dee2e6', backgroundColor: '#e0f7fa'}}>
-                            <div className="d-flex flex-column align-items-center">
-                              <span style={{fontSize: '1.3rem', fontWeight: 'bold', color: '#00838f'}}>
+                            <div className="text-center" style={compactMetricStyle}>
+                              <div className="fw-semibold text-info">
                                 {formatNumber(
                                   almacenesAMostrar.reduce((sum, alm) => {
                                     const almData = producto.almacenes?.[alm.co_alma];
                                     return sum + (almData?.stock_disponible || 0);
                                   }, 0)
                                 )}
-                              </span>
-                              <small className="text-muted" style={{fontSize: '0.7rem'}}>comparación</small>
+                              </div>
+                              <div className="text-muted">Seleccionados</div>
                             </div>
                           </td>
                         )}
                         <td style={{textAlign: 'center', borderRight: '3px solid #dee2e6', backgroundColor: '#e8f5e9'}}>
-                          <div className="d-flex flex-column align-items-center">
-                            <span style={{fontSize: '1.4rem', fontWeight: 'bold', color: '#1565c0'}}>
+                          <div className="text-center" style={compactMetricStyle}>
+                            <div className="fw-semibold text-primary">
                               {formatNumber(Object.values(producto.almacenes || {}).reduce((sum, alm) => sum + alm.stock_disponible, 0))}
-                            </span>
-                            <small className="text-muted" style={{fontSize: '0.7rem'}}>todos los almacenes</small>
+                            </div>
+                            <div className="text-muted">Total general</div>
                           </div>
                         </td>
                         <td style={{textAlign: 'center', backgroundColor: '#f1f8f4', borderRight: '1px solid #ddd'}}>
-                          <input
-                            type="number"
-                            className="form-control form-control-sm text-center"
-                            style={{width: '90px', margin: '0 auto', fontWeight: 'bold'}}
-                            value={cuotaSolicitada[producto.co_art] || ''}
-                            min="0"
-                            onChange={(e) => {
-                              const newValue = parseInt(e.target.value) || 0;
-                              setCuotaSolicitada({...cuotaSolicitada, [producto.co_art]: newValue});
-                            }}
-                            placeholder="0"
-                          />
+                          <div className="text-center" style={compactMetricStyle}>
+                            <div className="fw-semibold">{formatNumber(totalSolicitada)}</div>
+                            <div className="text-muted">Meta mensual</div>
+                            {totalPendiente > 0 && (
+                              <div className="text-warning" style={{fontSize: '0.7rem'}}>
+                                Pendiente: {formatNumber(totalPendiente)}
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td style={{textAlign: 'center', backgroundColor: '#f0f7ff', borderRight: '3px solid #dee2e6'}}>
-                          <input
-                            type="number"
-                            className="form-control form-control-sm text-center"
-                            style={{width: '90px', margin: '0 auto', fontWeight: 'bold'}}
-                            value={cuotaEnviada[producto.co_art] || ''}
-                            min="0"
-                            onChange={(e) => {
-                              const newValue = parseInt(e.target.value) || 0;
-                              setCuotaEnviada({...cuotaEnviada, [producto.co_art]: newValue});
-                            }}
-                            placeholder="0"
-                          />
+                          <div className="text-center" style={compactMetricStyle}>
+                            <div className="fw-semibold text-dark">
+                              {formatNumber(totalEnviada)} / {formatNumber(totalSolicitada || 0)}
+                            </div>
+                            <div className="text-muted">
+                              {totalSolicitada > 0 ? `${totalPorcentaje}% enviado` : 'Sin meta'}
+                            </div>
+                            {totalIncrementoPendiente > 0 && (
+                              <div className="text-muted" style={{fontSize: '0.7rem'}}>
+                                Próx. envío: +{formatNumber(totalIncrementoPendiente)}
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td style={{textAlign: 'center', borderRight: '3px solid #dee2e6'}}>
                           <span className="badge bg-info" style={{fontSize: '0.8rem'}}>
@@ -1072,63 +1264,65 @@ const fetchStockMinimo = async()=>{
                             <i className="bi bi-eye"></i>
                           </button>
                         </td>
-                      </>
-                    ) : (
-                      <>
-                        {columns.map(column => (
-                          <td key={column.key}>
-                            {column.render 
-                              ? column.render(producto[column.key], producto) 
-                              : producto[column.key]}
-                          </td>
-                        ))}
-                        <td>
-                          {(() => {
-                            const stockDisponible = (producto.stock_act || 0) - (producto.stock_com || 0);
-                            const stockMinimoReal = getStockMinimo(producto.co_art) || producto.stock_minimo || 0;
-                            return (
-                              <span className={`badge ${
-                                stockDisponible === 0  ? 'bg-danger' : 
-                                stockMinimoReal > 0 && stockDisponible <= stockMinimoReal ? 'bg-warning' : 
-                                'bg-success'
-                              }`}>
-                                {stockDisponible === 0 ? 'Sin Stock' : 
-                                 stockMinimoReal > 0 && stockDisponible <= stockMinimoReal ? 'Stock Bajo' : 
-                                 'Disponible'}
-                              </span>
-                            );
-                          })()}
+                      </tr>
+                    );
+                  }
+
+                  return (
+                    <tr key={`${producto.co_art}-${producto.co_alma || 'all'}`} style={{ backgroundColor: rowBackground }}>
+                      {columns.map(column => (
+                        <td key={column.key}>
+                          {column.render 
+                            ? column.render(producto[column.key], producto) 
+                            : producto[column.key]}
                         </td>
-                        <td className='d-flex flex-row'>
-                          {esAlmacenLogistica && (
-                            <button 
-                              title='Cambiar Stock Minimo'
-                              className="btn btn-sm btn-outline-primary me-1"
-                              onClick={() => handleEdit(producto)}
-                            >
-                              <i className="bi bi-pencil"></i>
-                            </button>
-                          )}
+                      ))}
+                      <td>
+                        {(() => {
+                          const stockDisponible = (producto.stock_act || 0) - (producto.stock_com || 0);
+                          const stockMinimoReal = getStockMinimo(producto.co_art) || producto.stock_minimo || 0;
+                          return (
+                            <span className={`badge ${
+                              stockDisponible === 0  ? 'bg-danger' : 
+                              stockMinimoReal > 0 && stockDisponible <= stockMinimoReal ? 'bg-warning' : 
+                              'bg-success'
+                            }`}>
+                              {stockDisponible === 0 ? 'Sin Stock' : 
+                               stockMinimoReal > 0 && stockDisponible <= stockMinimoReal ? 'Stock Bajo' : 
+                               'Disponible'}
+                            </span>
+                          );
+                        })()}
+                      </td>
+                      <td className='d-flex flex-row'>
+                        {esAlmacenLogistica && (
                           <button 
-                            title='Ver Observaciones'
-                            className="btn btn-sm btn-outline-secondary me-1"
-                            onClick={() => {
-                              const match = dataStockMinimo.find(item => item.co_art === producto.co_art);
-                              if (match) {
-                                setObservacion(match);
-                              } else {
-                                setObservacion(producto);
-                              }
-                              handleShowModalObservacion();
-                            }}
+                            title='Cambiar Stock Minimo'
+                            className="btn btn-sm btn-outline-primary me-1"
+                            onClick={() => handleEdit(producto)}
                           >
-                            <i className="bi bi-eye"></i>
+                            <i className="bi bi-pencil"></i>
                           </button>
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                ))}
+                        )}
+                        <button 
+                          title='Ver Observaciones'
+                          className="btn btn-sm btn-outline-secondary me-1"
+                          onClick={() => {
+                            const match = dataStockMinimo.find(item => item.co_art === producto.co_art);
+                            if (match) {
+                              setObservacion(match);
+                            } else {
+                              setObservacion(producto);
+                            }
+                            handleShowModalObservacion();
+                          }}
+                        >
+                          <i className="bi bi-eye"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             {currentProducts.length === 0 && (
