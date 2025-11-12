@@ -146,7 +146,7 @@ const Header = () => {
         .input-group .form-control { border-left: 0; }
         .input-group .input-group-text { border-right: 0; }
         .notification-dropdown .list-body { max-height: 260px; overflow: auto; }
-        .list-group-item-action:hover { background: #f8f9fa; }
+        .list-group-item-action:hover { background:rgb(15, 226, 15); }
         .unread-dot { width: 8px; height: 8px; border-radius: 50%; background: #dc3545; display: inline-block; }
       `}</style>
     </header>

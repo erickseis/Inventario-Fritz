@@ -8,6 +8,7 @@ import Produccion from '../pages/Produccion';
 import Ventas from '../pages/Ventas';
 import Inventario from '../pages/Inventario';
 import Movimientos from '../pages/Movimientos';
+import ControlInterno from '../pages/ControlInterno';
 import Proveedores from '../pages/Proveedores';
 import Ubicaciones from '../pages/Ubicaciones';
 import Reportes from '../pages/Reportes';
@@ -235,6 +236,27 @@ const MainApp = () => {
                 <Header />
                 <div className="content-wrapper">
                   <Movimientos />
+                </div>
+              </main>
+            </div>
+          } />
+          <Route path="/control-interno" element={
+            <div className="d-flex">
+              <Sidebar 
+                isCollapsed={sidebarCollapsed} 
+                toggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} 
+                onLogout={handleLogout}
+              />
+              <main className="flex-grow-1 transition-all"
+                style={{
+                  marginLeft: sidebarCollapsed ? '70px' : '250px',
+                  transition: 'margin-left 0.3s ease',
+                  minHeight: '100vh'
+                }}
+              >
+                <Header />
+                <div className="content-wrapper">
+                  <ControlInterno />
                 </div>
               </main>
             </div>

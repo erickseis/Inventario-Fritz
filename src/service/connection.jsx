@@ -342,3 +342,64 @@ export const eliminarCuota = async ({ co_art, co_alma, periodo } = {}) => {
     throw error;
   }
 };
+
+// CONTROL INTERNO - Listas de carga
+export const obtenerListasControl = async () => {
+  try {
+    const response = await api.get('/control-interno/lists');
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener listas de control interno:', error.message);
+    throw error;
+  }
+};
+
+export const crearListaControl = async (data) => {
+  try {
+    const response = await api.post('/control-interno/lists', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error al crear lista de control interno:', error.message);
+    throw error;
+  }
+};
+
+export const crearItemControl = async (listaId, data) => {
+  try {
+    const response = await api.post(`/control-interno/lists/${listaId}/items`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Error al crear ítem de control interno:', error.message);
+    throw error;
+  }
+};
+
+export const ajustarItemControl = async (itemId, data) => {
+  try {
+    const response = await api.patch(`/control-interno/items/${itemId}/adjust`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Error al ajustar ítem de control interno:', error.message);
+    throw error;
+  }
+};
+
+export const resetearItemControl = async (itemId) => {
+  try {
+    const response = await api.post(`/control-interno/items/${itemId}/reset`);
+    return response.data;
+  } catch (error) {
+    console.error('Error al reiniciar ítem de control interno:', error.message);
+    throw error;
+  }
+};
+
+export const obtenerHistorialItemControl = async (itemId) => {
+  try {
+    const response = await api.get(`/control-interno/items/${itemId}/history`);
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener historial de control interno:', error.message);
+    throw error;
+  }
+};
