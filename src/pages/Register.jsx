@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./Auth.css";
-import {  registro } from "../service/authSesion";
-import {obtenerCargos, obtenerDepartamentos, obtenerVendedores,} from "../service/connection"
-
+import { registro } from "../service/authSesion";
+import {
+  obtenerCargos,
+  obtenerDepartamentos,
+  obtenerVendedores,
+} from "../service/connection";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -28,7 +31,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [vendedores, setVendedores] = useState([]);
   const [cargos, setCargos] = useState([]);
-  const [departamentos, setDepartamentos] = useState([])
+  const [departamentos, setDepartamentos] = useState([]);
 
   const fetchVendedores = async () => {
     try {
@@ -106,33 +109,53 @@ const Register = () => {
       // Mapeo exacto según estructura DB
       const datosParaEnvio = {
         usuario: formData.usuario.trim(),
-        codigo_vendedor: formData.codigo_vendedor && formData.codigo_vendedor.trim() !== "" ? formData.codigo_vendedor.trim() : 'null',
+        codigo_vendedor:
+          formData.codigo_vendedor && formData.codigo_vendedor.trim() !== ""
+            ? formData.codigo_vendedor.trim()
+            : "null",
         nombre: formData.nombre.trim(),
         apellido: formData.apellido.trim(),
         correo: formData.correo.trim(),
         telefono: formData.telefono.trim(),
         ciudad: formData.ciudad.trim(),
-        departamento: formData.departamento ? Number(formData.departamento) : null,
+        departamento: formData.departamento
+          ? Number(formData.departamento)
+          : null,
         rol: formData.rol ? Number(formData.rol) : null,
         cargo: formData.cargo ? Number(formData.cargo) : null,
         contrasenha: formData.contrasenha,
         // Campos que podría esperar el backend
-        deleted: false
+        deleted: false,
       };
-      
-      console.log("Datos enviados al backend:", JSON.stringify(datosParaEnvio, null, 2));
-      
+
+      console.log(
+        "Datos enviados al backend:",
+        JSON.stringify(datosParaEnvio, null, 2),
+      );
+
       // Validar campos requeridos
-      const camposRequeridos = ['usuario', 'nombre', 'apellido', 'correo', 'contrasenha'];
-      const camposFaltantes = camposRequeridos.filter(campo => !datosParaEnvio[campo] || datosParaEnvio[campo].toString().trim() === '');
-      
+      const camposRequeridos = [
+        "usuario",
+        "nombre",
+        "apellido",
+        "correo",
+        "contrasenha",
+      ];
+      const camposFaltantes = camposRequeridos.filter(
+        (campo) =>
+          !datosParaEnvio[campo] ||
+          datosParaEnvio[campo].toString().trim() === "",
+      );
+
       if (camposFaltantes.length > 0) {
         console.error("Campos requeridos faltantes:", camposFaltantes);
-        setError(`Por favor complete los campos: ${camposFaltantes.join(', ')}`);
+        setError(
+          `Por favor complete los campos: ${camposFaltantes.join(", ")}`,
+        );
         setLoading(false);
         return;
       }
-      
+
       const userRegistro = await registro(datosParaEnvio);
       if (userRegistro) {
         // Simulación de registro
@@ -190,7 +213,7 @@ const Register = () => {
                 <form onSubmit={handleSubmit}>
                   <div className="mb-3">
                     <label htmlFor="usuario" className="form-label">
-                    <i class="bi bi-person-badge"></i>Usuario
+                      <i class="bi bi-person-badge"></i>Usuario
                     </label>
                     <input
                       type="text"
@@ -267,7 +290,7 @@ const Register = () => {
                   </div>
                   <div className="mb-3">
                     <label htmlFor="phone" className="form-label">
-                    <i class="bi bi-pin-map-fill"></i>Ciudad
+                      <i class="bi bi-pin-map-fill"></i>Ciudad
                     </label>
                     <input
                       type="tel"
@@ -282,7 +305,7 @@ const Register = () => {
 
                   <div className="mb-3">
                     <label htmlFor="departamento" className="form-label">
-                    <i class="bi bi-building"></i>Departamento
+                      <i class="bi bi-building"></i>Departamento
                     </label>
                     <select
                       className="form-select custom-select"
@@ -293,11 +316,13 @@ const Register = () => {
                       required
                     >
                       <option value="">Selecciona un departamento</option>
-                      {departamentos.filter((item)=> item.deleted === false).map((departamento) => (
-                        <option key={departamento.id} value={departamento.id}>
-                          {departamento.name}
-                        </option>
-                      ))}
+                      {departamentos
+                        .filter((item) => item.deleted === false)
+                        .map((departamento) => (
+                          <option key={departamento.id} value={departamento.id}>
+                            {departamento.name}
+                          </option>
+                        ))}
                     </select>
                   </div>
                   {formData.departamento === "16" ? (
@@ -324,7 +349,6 @@ const Register = () => {
                     </div>
                   ) : null}
 
-               
                   <div className="mb-3">
                     <label htmlFor="cargo" className="form-label">
                       <i className="bi bi-briefcase me-2"></i>Cargo
@@ -338,16 +362,24 @@ const Register = () => {
                       required
                     >
                       <option value="">Selecciona un cargo</option>
-                      {formData.departamento ? cargos.filter((item)=> Number(item.departamento_id) === Number(formData.departamento)).map((cargo) => {
-                        formData.rol = cargo.rol_id
-                        return(
-                          
-                        <option key={cargo.id} value={cargo.id}>
-                          {cargo.nombre_cargo}
-                        </option>
-                        )
-                      }) : <option value="">Selecciona un cargo</option>}
-                      
+                      {formData.departamento ? (
+                        cargos
+                          .filter(
+                            (item) =>
+                              Number(item.departamento_id) ===
+                              Number(formData.departamento),
+                          )
+                          .map((cargo) => {
+                            formData.rol = cargo.rol_id;
+                            return (
+                              <option key={cargo.id} value={cargo.id}>
+                                {cargo.nombre_cargo}
+                              </option>
+                            );
+                          })
+                      ) : (
+                        <option value="">Selecciona un cargo</option>
+                      )}
                     </select>
                   </div>
 

@@ -15,30 +15,30 @@ export const useUser = () => {
     try {
       setLoading(true);
       const response = await obtenerUsuarioLogueado(userId);
-      console.log('funcion obtener usuario loguado hook', response)
+      console.log("funcion obtener usuario loguado hook", response);
       setUser(response);
       setError(null);
     } catch (err) {
-      console.error('Error al obtener datos del usuario:', err);
-      setError(err.message || 'Error al cargar datos del usuario');
+      console.error("Error al obtener datos del usuario:", err);
+      setError(err.message || "Error al cargar datos del usuario");
     } finally {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    console.log('usuario data use hook', userData)
+    const userData = localStorage.getItem("user");
+    console.log("usuario data use hook", userData);
     if (userData) {
       try {
         const parsedUserData = JSON.parse(userData);
-        if(parsedUserData && parsedUserData.userId){
+        if (parsedUserData?.userId) {
           fetchUserData(parsedUserData.userId);
         } else {
           setLoading(false);
         }
       } catch (err) {
-        console.error('Error al parsear datos del usuario:', err);
+        console.error("Error al parsear datos del usuario:", err);
         setLoading(false);
       }
     } else {
@@ -47,15 +47,15 @@ export const useUser = () => {
   }, []);
 
   const refreshUser = () => {
-    const userData = localStorage.getItem('user');
+    const userData = localStorage.getItem("user");
     if (userData) {
       try {
         const parsedUser = JSON.parse(userData);
-        if (parsedUser && parsedUser.userId) {
+        if (parsedUser?.userId) {
           fetchUserData(parsedUser.userId);
         }
       } catch (err) {
-        console.error('Error al parsear datos del usuario:', err);
+        console.error("Error al parsear datos del usuario:", err);
       }
     }
   };
@@ -63,7 +63,7 @@ export const useUser = () => {
   const clearUser = () => {
     setUser(null);
     setError(null);
-    localStorage.removeItem('user');
+    localStorage.removeItem("user");
   };
 
   return {
@@ -72,6 +72,6 @@ export const useUser = () => {
     error,
     refreshUser,
     clearUser,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
   };
 };

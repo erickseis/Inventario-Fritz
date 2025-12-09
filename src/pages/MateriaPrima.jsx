@@ -1,32 +1,63 @@
-import React, { useState } from 'react';
-import { useData } from '../hooks/useData';
-import DataTable from '../components/DataTable';
-import FormModal from '../components/FormModal';
+import { useState } from "react";
+import DataTable from "../components/DataTable";
+import FormModal from "../components/FormModal";
+import { useData } from "../hooks/useData";
 
 const MateriaPrima = () => {
-  const { data: materiaPrima, addItem, updateItem, deleteItem } = useData('materia_prima');
+  const {
+    data: materiaPrima,
+    addItem,
+    updateItem,
+    deleteItem,
+  } = useData("materia_prima");
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
 
   const columns = [
-    { key: 'id', label: 'ID' },
-    { key: 'nombre', label: 'Nombre', sortable: true },
-    { key: 'unidad_medida', label: 'Unidad', sortable: true },
-    { key: 'stock_actual', label: 'Stock Actual', sortable: true, render: (value) => `${value} ${value.unidad_medida || 'un'}` },
-    { key: 'costo_unitario', label: 'Costo Unitario', sortable: true, render: (value) => `$${parseFloat(value).toFixed(2)}` }
+    { key: "id", label: "ID" },
+    { key: "nombre", label: "Nombre", sortable: true },
+    { key: "unidad_medida", label: "Unidad", sortable: true },
+    {
+      key: "stock_actual",
+      label: "Stock Actual",
+      sortable: true,
+      render: (value) => `${value} ${value.unidad_medida || "un"}`,
+    },
+    {
+      key: "costo_unitario",
+      label: "Costo Unitario",
+      sortable: true,
+      render: (value) => `$${parseFloat(value).toFixed(2)}`,
+    },
   ];
 
   const formFields = [
-    { name: 'nombre', label: 'Nombre', type: 'text', required: true },
-    { name: 'unidad_medida', label: 'Unidad de Medida', type: 'select', required: true, options: [
-      { value: 'kg', label: 'Kilogramo' },
-      { value: 'm', label: 'Metro' },
-      { value: 'm²', label: 'Metro cuadrado' },
-      { value: 'litro', label: 'Litro' },
-      { value: 'unidad', label: 'Unidad' }
-    ]},
-    { name: 'stock_actual', label: 'Stock Actual', type: 'number', required: true },
-    { name: 'costo_unitario', label: 'Costo Unitario', type: 'number', required: true }
+    { name: "nombre", label: "Nombre", type: "text", required: true },
+    {
+      name: "unidad_medida",
+      label: "Unidad de Medida",
+      type: "select",
+      required: true,
+      options: [
+        { value: "kg", label: "Kilogramo" },
+        { value: "m", label: "Metro" },
+        { value: "m²", label: "Metro cuadrado" },
+        { value: "litro", label: "Litro" },
+        { value: "unidad", label: "Unidad" },
+      ],
+    },
+    {
+      name: "stock_actual",
+      label: "Stock Actual",
+      type: "number",
+      required: true,
+    },
+    {
+      name: "costo_unitario",
+      label: "Costo Unitario",
+      type: "number",
+      required: true,
+    },
   ];
 
   const handleAdd = () => {
@@ -48,7 +79,7 @@ const MateriaPrima = () => {
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('¿Está seguro de eliminar esta materia prima?')) {
+    if (window.confirm("¿Está seguro de eliminar esta materia prima?")) {
       deleteItem(id);
     }
   };
@@ -73,7 +104,7 @@ const MateriaPrima = () => {
         show={showModal}
         onClose={() => setShowModal(false)}
         onSubmit={handleSubmit}
-        title={editingItem ? 'Editar Materia Prima' : 'Nueva Materia Prima'}
+        title={editingItem ? "Editar Materia Prima" : "Nueva Materia Prima"}
         fields={formFields}
         initialData={editingItem}
       />

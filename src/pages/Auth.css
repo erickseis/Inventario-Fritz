@@ -18,22 +18,22 @@
   .auth-container {
     padding: 10px 0;
   }
-  
+
   .auth-card {
     margin: 0 10px;
     border-radius: 10px;
   }
-  
+
   .auth-card .card-body {
-    padding: 2rem 1.5rem !important;
+    padding: 2rem 1.5rem;
   }
-  
+
   .auth-card h2 {
     font-size: 1.5rem;
   }
-  
+
   .auth-card .fs-1 {
-    font-size: 2rem !important;
+    font-size: 2rem;
   }
 }
 
@@ -41,7 +41,7 @@
   .auth-card {
     margin: 0 15px;
   }
-  
+
   .auth-card .card-body {
     padding: 2.5rem 2rem;
   }
@@ -121,27 +121,27 @@
 }
 
 .text-primary {
-  color: #667eea !important;
+  color: #667eea;
 }
 
 /* Logo and branding responsive */
 .bg-primary.bg-opacity-10 {
-  background-color: rgba(102, 126, 234, 0.1) !important;
+  background-color: rgba(102, 126, 234, 0.1);
 }
 
 @media (max-width: 576px) {
   .bg-primary.bg-opacity-10 {
-    padding: 1rem !important;
+    padding: 1rem;
   }
-  
+
   .bg-primary.bg-opacity-10 .fs-1 {
-    font-size: 1.75rem !important;
+    font-size: 1.75rem;
   }
 }
 
 /* Links responsive */
 .text-decoration-none {
-  text-decoration: none !important;
+  text-decoration: none;
 }
 
 @media (max-width: 576px) {
@@ -185,7 +185,7 @@
   .btn {
     min-height: 44px;
   }
-  
+
   .form-control {
     min-height: 44px;
   }
@@ -196,11 +196,11 @@
   .auth-container {
     padding: 10px 0;
   }
-  
+
   .auth-card {
     margin: 5px;
   }
-  
+
   .auth-card .card-body {
     padding: 1.5rem;
   }

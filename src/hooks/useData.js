@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
 
 export const useData = (dataFile) => {
   const [data, setData] = useState([]);
@@ -24,18 +24,20 @@ export const useData = (dataFile) => {
   }, [dataFile]);
 
   const addItem = (newItem) => {
-    const id = Math.max(...data.map(item => item.id), 0) + 1;
+    const id = Math.max(...data.map((item) => item.id), 0) + 1;
     const itemWithId = { ...newItem, id };
     setData([...data, itemWithId]);
     return itemWithId;
   };
 
   const updateItem = (id, updatedItem) => {
-    setData(data.map(item => item.id === id ? { ...item, ...updatedItem } : item));
+    setData(
+      data.map((item) => (item.id === id ? { ...item, ...updatedItem } : item)),
+    );
   };
 
   const deleteItem = (id) => {
-    setData(data.filter(item => item.id !== id));
+    setData(data.filter((item) => item.id !== id));
   };
 
   return {
@@ -44,6 +46,6 @@ export const useData = (dataFile) => {
     error,
     addItem,
     updateItem,
-    deleteItem
+    deleteItem,
   };
 };

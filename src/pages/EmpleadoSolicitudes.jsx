@@ -1,5 +1,4 @@
-import React from 'react';
-import SolicitudRequerimientoForm from '../components/SolicitudRequerimientoForm';
+import SolicitudRequerimientoForm from "../components/SolicitudRequerimientoForm";
 
 const EmpleadoSolicitudes = () => {
   return (

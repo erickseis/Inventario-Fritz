@@ -1,8 +1,6 @@
-import React from 'react';
-
 const Pronostico = () => {
   return (
-    <div >
+    <div>
       <iframe
         // src="//172.24.0.125:9888"
         src="https://bnxvb1rj-9888.use2.devtunnels.ms/"
@@ -53,19 +51,19 @@ export default Pronostico;
 //           borderRadius: '8px',
 //           boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)'
 //         }}>
-//           <div style={{ 
-//             width: '40px', 
-//             height: '40px', 
-//             border: '4px solid #f3f3f3', 
-//             borderTop: '4px solid #3498db', 
-//             borderRadius: '50%', 
+//           <div style={{
+//             width: '40px',
+//             height: '40px',
+//             border: '4px solid #f3f3f3',
+//             borderTop: '4px solid #3498db',
+//             borderRadius: '50%',
 //             animation: 'spin 1s linear infinite',
 //             margin: '0 auto 15px auto'
 //           }}></div>
 //           <p>Cargando aplicación de pronóstico...</p>
 //         </div>
 //       )}
-      
+
 //       {hasError ? (
 //         <div style={{
 //           padding: '40px',
@@ -78,8 +76,8 @@ export default Pronostico;
 //           <h3 style={{ color: '#d32f2f', marginBottom: '15px' }}>Error de conexión</h3>
 //           <p>No se pudo cargar la aplicación de pronóstico.</p>
 //           <p>Por favor, verifique que el servidor de pronóstico esté disponible.</p>
-//           <button 
-//             onClick={() => window.location.reload()} 
+//           <button
+//             onClick={() => window.location.reload()}
 //             style={{
 //               backgroundColor: '#3498db',
 //               color: 'white',
@@ -104,7 +102,7 @@ export default Pronostico;
 //           allowFullScreen
 //           onLoad={handleIframeLoad}
 //           onError={handleIframeError}
-//           style={{ 
+//           style={{
 //             display: isLoading ? 'none' : 'block',
 //             border: 'none',
 //             borderRadius: '8px',
@@ -112,7 +110,7 @@ export default Pronostico;
 //           }}
 //         />
 //       )}
-      
+
 //       <style>
 //         {`
 //           @keyframes spin {

@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { stockMinimo } from '../service/connection';
-import Swal from 'sweetalert2';
+import { useEffect, useState } from "react";
+import Swal from "sweetalert2";
+import { stockMinimo } from "../service/connection";
 
-const FormModal = ({ 
-  show, 
-  onClose, 
+const FormModal = ({
+  show,
+  onClose,
   fetchStockMinimo,
-  // onSubmit, 
-  title, 
-  fields, 
-  initialData = null 
+  // onSubmit,
+  title,
+  fields,
+  initialData = null,
 }) => {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
@@ -20,8 +20,8 @@ const FormModal = ({
     } else {
       // Inicializar con valores por defecto
       const initialValues = {};
-      fields.forEach(field => {
-        initialValues[field.name] = field.type === 'number' ? 0 : '';
+      fields.forEach((field) => {
+        initialValues[field.name] = field.type === "number" ? 0 : "";
       });
       setFormData(initialValues);
     }
@@ -30,81 +30,78 @@ const FormModal = ({
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
-    const processedValue = type === 'number' ? parseFloat(value) || 0 : value;
-    
-    setFormData(prev => ({
+    const processedValue = type === "number" ? parseFloat(value) || 0 : value;
+
+    setFormData((prev) => ({
       ...prev,
-      [name]: processedValue
+      [name]: processedValue,
     }));
-    
+
     // Limpiar error al escribir
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
   };
 
   const validate = () => {
     const newErrors = {};
-    
-    fields.forEach(field => {
+
+    fields.forEach((field) => {
       if (field.required && !formData[field.name]) {
         newErrors[field.name] = `${field.label} es requerido`;
         Swal.fire({
-          icon: 'error',
-          title: 'Oops...',
+          icon: "error",
+          title: "Oops...",
           text: `${field.label} es requerido`,
-
         });
         return;
       }
-      
-      if (field.type === 'number' && formData[field.name] < 0) {
+
+      if (field.type === "number" && formData[field.name] < 0) {
         newErrors[field.name] = `${field.label} debe ser mayor o igual a 0`;
         Swal.fire({
-          icon: 'error',
-          title: 'Oops...',
+          icon: "error",
+          title: "Oops...",
           text: `${field.label} debe ser mayor o igual a 0`,
-
         });
         return;
       }
     });
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
   const onSubmit = async (data) => {
     try {
-      const response = await stockMinimo(data);   // axios response object
-      console.log(response.data);     
+      const response = await stockMinimo(data); // axios response object
+      console.log(response.data);
       Swal.fire({
-        icon: 'success',
-        title: 'Exito...',
-        text: 'Stock minimo actualizado',
-
+        icon: "success",
+        title: "Exito...",
+        text: "Stock minimo actualizado",
       });
-      fetchStockMinimo();            // OK
+      fetchStockMinimo(); // OK
     } catch (error) {
       // Safely read server message OR generic error
-      const msg = error.response?.data?.message || error.message || 'Error desconocido';
+      const msg =
+        error.response?.data?.message || error.message || "Error desconocido";
       console.error(msg);
       Swal.fire({
-        icon: 'error',
-        title: 'Oops...',
+        icon: "error",
+        title: "Oops...",
         text: msg,
-
       });
     }
   };
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (validate()) {
       onSubmit(formData);
-      
+
       onClose();
     }
   };
@@ -112,47 +109,57 @@ const FormModal = ({
   if (!show) return null;
 
   return (
-    <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+    <div
+      className="modal show d-block"
+      tabIndex="-1"
+      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+    >
       <div className="modal-dialog modal-ls">
         <div className="modal-content">
           <div className="modal-header">
             <h5 className="modal-title">{title}</h5>
-            <button type="button" className="btn-close" onClick={onClose}></button>
+            <button
+              type="button"
+              className="btn-close"
+              onClick={onClose}
+            ></button>
           </div>
-          
+
           <form onSubmit={handleSubmit}>
             <div className="modal-body">
               <div className="row">
-                {fields.map(field => (
-                  <div key={field.name} >
+                {fields.map((field) => (
+                  <div key={field.name}>
                     <div className="mb-3">
                       <label htmlFor={field.name} className="form-label">
                         {field.label}
-                        {field.required && <span className="text-danger">*</span>}
+                        {field.required && (
+                          <span className="text-danger">*</span>
+                        )}
                       </label>
-                      
-                      {field.type === 'select' ? (
+
+                      {field.type === "select" ? (
                         <select
                           id={field.name}
                           name={field.name}
-                          className={`form-select ${errors[field.name] ? 'is-invalid' : ''}`}
-                          value={formData[field.name] || ''}
+                          className={`form-select ${errors[field.name] ? "is-invalid" : ""}`}
+                          value={formData[field.name] || ""}
                           onChange={handleChange}
                           required={field.required}
                         >
                           <option value="">Seleccione...</option>
-                          {field.options.map(option => (
+                          {field.options.map((option) => (
                             <option key={option.value} value={option.value}>
                               {option.label}
                             </option>
                           ))}
                         </select>
-                      ) : field.type === 'textarea' ? (
+                      ) : field.type === "textarea" ? (
                         <textarea
                           id={field.name}
                           name={field.name}
-                          className={`form-control ${errors[field.name] ? 'is-invalid' : ''}`}
-                          value={formData[field.name] || ''}
+                          className={`form-control ${errors[field.name] ? "is-invalid" : ""}`}
+                          value={formData[field.name] || ""}
                           onChange={handleChange}
                           required={field.required}
                           rows={3}
@@ -162,16 +169,16 @@ const FormModal = ({
                           type={field.type}
                           id={field.name}
                           name={field.name}
-                          className={`form-control ${errors[field.name] ? 'is-invalid' : ''}`}
-                          value={formData[field.name] || ''}
+                          className={`form-control ${errors[field.name] ? "is-invalid" : ""}`}
+                          value={formData[field.name] || ""}
                           onChange={handleChange}
                           required={field.required}
-                          step={field.type === 'number' ? '0.01' : undefined}
-                          min={field.type === 'number' ? 0 : undefined}
+                          step={field.type === "number" ? "0.01" : undefined}
+                          min={field.type === "number" ? 0 : undefined}
                           disabled={field.disabled || false}
                         />
                       )}
-                      
+
                       {errors[field.name] && (
                         <div className="invalid-feedback">
                           {errors[field.name]}
@@ -182,9 +189,13 @@ const FormModal = ({
                 ))}
               </div>
             </div>
-            
+
             <div className="modal-footer">
-              <button type="button" className="btn btn-secondary" onClick={onClose}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onClose}
+              >
                 Cancelar
               </button>
               <button type="submit" className="btn btn-primary">

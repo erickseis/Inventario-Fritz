@@ -1,13 +1,15 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useUser } from '../hooks/useUser';
+import { Navigate } from "react-router-dom";
+import { useUser } from "../hooks/useUser";
 
 const RoleProtectedRoute = ({ allowedRoles = [], children }) => {
   const { user, loading, isAuthenticated } = useUser();
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ minHeight: "60vh" }}
+      >
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Cargando...</span>
         </div>
@@ -30,7 +32,9 @@ const RoleProtectedRoute = ({ allowedRoles = [], children }) => {
     return <Navigate to="/inventario" replace />;
   }
 
-  const isAllowed = allowedRoles.length === 0 || (numericRole != null && allowedRoles.includes(numericRole));
+  const isAllowed =
+    allowedRoles.length === 0 ||
+    (numericRole != null && allowedRoles.includes(numericRole));
 
   if (!isAllowed) {
     return <Navigate to="/" replace />;

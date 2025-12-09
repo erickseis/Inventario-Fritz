@@ -1,77 +1,527 @@
 [
-  { "id": "MPSEPV17", "nombre": "SABOR QUESO CHEDDAR",              "unidad_medida": "KG", "stock_actual": 21409.88, "costo_unitario": 5.90 },
-  { "id": "MPGRAC01", "nombre": "ACEITE VEGETAL (E)",               "unidad_medida": "KG", "stock_actual": 34085.24, "costo_unitario": 2.75 },
-  { "id": "MPSBPV02", "nombre": "CEBOLLA EN POLVO",                 "unidad_medida": "KG", "stock_actual": 4800.27,  "costo_unitario": 15.99 },
-  { "id": "MPSEPV15", "nombre": "SABOR A TOCINETA",                 "unidad_medida": "KG", "stock_actual": 10633.21, "costo_unitario": 6.90 },
-  { "id": "MPSBPU02", "nombre": "PASTA P/TOMATE",                   "unidad_medida": "KG", "stock_actual": 68715.60, "costo_unitario": 0.99 },
-  { "id": "PPBATCHEM20", "nombre": "BATCH PREPARADO DE MAYONESA SPLASH (CON ALMIDON)", "unidad_medida": "KG", "stock_actual": 46128.80, "costo_unitario": 1.16 },
-  { "id": "MPSEPV14", "nombre": "SABOR A MAÍZ V14",                 "unidad_medida": "KG", "stock_actual": 1291.92,  "costo_unitario": 34.46 },
-  { "id": "MPSBDU03", "nombre": "AZUCAR",                           "unidad_medida": "KG", "stock_actual": 30484.12, "costo_unitario": 1.20 },
-  { "id": "MPEPAL01", "nombre": "ALMIDON P/MAIZ (ARCO REX 8416)",   "unidad_medida": "KG", "stock_actual": 12480.10, "costo_unitario": 2.51 },
-  { "id": "MPEPAL06", "nombre": "ALMIDON PREGELATINIZADO 688WT",    "unidad_medida": "KG", "stock_actual": 8029.44,  "costo_unitario": 3.90 },
-  { "id": "MPSEDU01", "nombre": "HUMO LÍQUIDO",                     "unidad_medida": "KG", "stock_actual": 2858.50,  "costo_unitario": 10.50 },
-  { "id": "MPCSQI04", "nombre": "VINAGRE 10%",                      "unidad_medida": "KG", "stock_actual": 30177.26, "costo_unitario": 0.61 },
-  { "id": "MPEPGO02", "nombre": "GOMA XANTHAN",                     "unidad_medida": "KG", "stock_actual": 2853.83,  "costo_unitario": 5.80 },
-  { "id": "MPEPAL04", "nombre": "ALMIDON REGULAR ARCO REX 1042346 NATIVO", "unidad_medida": "KG", "stock_actual": 8739.30,  "costo_unitario": 1.56 },
-  { "id": "MPCSQI09", "nombre": "JUGO DE LIMON CONCENTRADO",        "unidad_medida": "KG", "stock_actual": 3138.10,  "costo_unitario": 4.21 },
-  { "id": "MPADLQ14", "nombre": "GLUCOSA (2313)",                   "unidad_medida": "KG", "stock_actual": 3510.20,  "costo_unitario": 2.57 },
-  { "id": "MPSBDU02", "nombre": "ASPARTAME",                        "unidad_medida": "KG", "stock_actual": 269.57,   "costo_unitario": 30.00 },
-  { "id": "MPSBPV03", "nombre": "BENZOATO DE SODIO",                "unidad_medida": "KG", "stock_actual": 2794.82,  "costo_unitario": 2.88 },
-  { "id": "MPSELQ08", "nombre": "OLEORRESINA P/MAIZ",               "unidad_medida": "KG", "stock_actual": 180.65,   "costo_unitario": 42.00 },
-  { "id": "PPBATCHEM11", "nombre": "BATCH PARA SALSA B.B.Q.",         "unidad_medida": "KG", "stock_actual": 4917.84,  "costo_unitario": 1.27 },
-  { "id": "MPSBSL01", "nombre": "SAL",                              "unidad_medida": "KG", "stock_actual": 20360.65, "costo_unitario": 0.30 },
-  { "id": "MPCSQI04", "nombre": "EDTA",                             "unidad_medida": "KG", "stock_actual": 1053.25,  "costo_unitario": 5.15 },
-  { "id": "MPADLQ04", "nombre": "CARAMELINA (1123)",                "unidad_medida": "KG", "stock_actual": 1535.50,  "costo_unitario": 3.42 },
-  { "id": "MPCSQI07", "nombre": "SORBATO P/POTASIO",                "unidad_medida": "KG", "stock_actual": 1332.12,  "costo_unitario": 3.83 },
-  { "id": "MPSEPV13", "nombre": "SABOR A MAIZ V13",                 "unidad_medida": "KG", "stock_actual": 436.20,   "costo_unitario": 11.31 },
-  { "id": "MPSELQ07", "nombre": "OLEORRESINA CEBOLLA",              "unidad_medida": "KG", "stock_actual": 24.93,    "costo_unitario": 194.40 },
-  { "id": "MPADSO03", "nombre": "COLOR ROJO",                       "unidad_medida": "KG", "stock_actual": 217.74,   "costo_unitario": 21.40 },
-  { "id": "MPSBLQ08", "nombre": "SABOR A KETCHUP F51797",           "unidad_medida": "KG", "stock_actual": 26.89,    "costo_unitario": 173.14 },
-  { "id": "MPSBPV01", "nombre": "CANELA",                           "unidad_medida": "KG", "stock_actual": 216.30,   "costo_unitario": 18.00 },
-  { "id": "PPSBLQ01", "nombre": "PULPA DE AJI PICANTE",             "unidad_medida": "KG", "stock_actual": 4351.60,  "costo_unitario": 0.74 },
-  { "id": "MPSEPV03", "nombre": "CLAVO MOLIDO",                     "unidad_medida": "KG", "stock_actual": 104.50,   "costo_unitario": 30.00 },
-  { "id": "MPSBLQ03", "nombre": "AGUA SUAVIZADA",                   "unidad_medida": "KG", "stock_actual": 1147124.82, "costo_unitario": 0.003 },
-  { "id": "MPSEPV10", "nombre": "PVH TIPO S SOYA (HPS)",            "unidad_medida": "KG", "stock_actual": 709.05,   "costo_unitario": 4.31 },
-  { "id": "MPSBAI01", "nombre": "ACIDO CITRICO",                    "unidad_medida": "KG", "stock_actual": 1441.60,  "costo_unitario": 1.98 },
-  { "id": "MPSELQ10", "nombre": "OLEORRESINA MOSTAZA",              "unidad_medida": "KG", "stock_actual": 33.00,    "costo_unitario": 75.77 },
-  { "id": "MPSEPV23", "nombre": "MANTEQUILLA POLVO 401441",         "unidad_medida": "KG", "stock_actual": 173.42,   "costo_unitario": 13.29 },
-  { "id": "MPADSO01", "nombre": "COLOR AMARILLO",                   "unidad_medida": "KG", "stock_actual": 196.16,   "costo_unitario": 11.31 },
-  { "id": "MPSELQ25", "nombre": "BASE P/SALSA DE SOYA 481-14",      "unidad_medida": "KG", "stock_actual": 581.00,   "costo_unitario": 3.50 },
-  { "id": "MPSELQ24", "nombre": "BASE P/SALSA INGLESA 480-14",      "unidad_medida": "KG", "stock_actual": 560.17,   "costo_unitario": 3.50 },
-  { "id": "MPSEPV04", "nombre": "CURCUMA EN POLVO",                 "unidad_medida": "KG", "stock_actual": 240.00,   "costo_unitario": 7.71 },
-  { "id": "PPBATCHEM05", "nombre": "BATCH PARA SALSA SABOR A TOCINETA EXPORTACION", "unidad_medida": "KG", "stock_actual": 319.74,  "costo_unitario": 5.73 },
-  { "id": "PPBATCHEM35", "nombre": "BATCH PARA PREPARADO DE MAYONESA DELI", "unidad_medida": "KG", "stock_actual": 2029.20, "costo_unitario": 0.83 },
-  { "id": "MPSBAI02", "nombre": "GLUTAMATO MONOSODICO",             "unidad_medida": "KG", "stock_actual": 468.17,   "costo_unitario": 3.55 },
-  { "id": "PPSBLQ02", "nombre": "PULPA DE AJI DULCE",               "unidad_medida": "KG", "stock_actual": 895.60,   "costo_unitario": 1.72 },
-  { "id": "MPSELQ23", "nombre": "BASE P/SALSA DE AJO 532-15B",      "unidad_medida": "KG", "stock_actual": 422.55,   "costo_unitario": 3.31 },
-  { "id": "MPSFPOL01", "nombre": "COMINO MOLINO",                    "unidad_medida": "KG", "stock_actual": 85.81,    "costo_unitario": 14.95 },
-  { "id": "MPSELQ06", "nombre": "OLEORRESINA AJO",                  "unidad_medida": "KG", "stock_actual": 22.88,    "costo_unitario": 52.54 },
-  { "id": "MPADSO06", "nombre": "COLOR AMARILLO #5 PURO",           "unidad_medida": "KG", "stock_actual": 80.45,    "costo_unitario": 14.93 },
-  { "id": "PPBATCHEM32", "nombre": "BATCH PARA ADEREZO SABOR A MAIZ BOLSA L.E", "unidad_medida": "KG", "stock_actual": 1144.00, "costo_unitario": 1.03 },
-  { "id": "PPBATCHEM40", "nombre": "BATCH PARA ADEREZO SABOR A QUESO CHEDDAR BOLSA L.E (ALMIDON PREGEL)", "unidad_medida": "KG", "stock_actual": 754.00, "costo_unitario": 1.54 },
-  { "id": "PPBATCHEM33", "nombre": "BATCH PARA ADEREZO SABOR A QUESO CHEDDAR BOLSA L.E", "unidad_medida": "KG", "stock_actual": 976.00, "costo_unitario": 1.16 },
-  { "id": "MPSBPU11", "nombre": "PULPA DE AJI PICANTE JALAPEÑO ROJO", "unidad_medida": "KG", "stock_actual": 434.90, "costo_unitario": 2.52 },
-  { "id": "MPADSO02", "nombre": "COLOR NARANJA (BACKER)",           "unidad_medida": "KG", "stock_actual": 109.80,   "costo_unitario": 9.00 },
-  { "id": "PPBATCHEM26", "nombre": "BATCH PARA SALSA SABOR A MAIZ NACIONAL", "unidad_medida": "KG", "stock_actual": 332.68, "costo_unitario": 2.70 },
-  { "id": "PPBATCHEM30", "nombre": "BATCH PARA SALSA A BASE DE TOMATE LINEA ECONOMICA", "unidad_medida": "KG", "stock_actual": 1399.68, "costo_unitario": 0.62 },
-  { "id": "MPSELQ11", "nombre": "OLEORRESINA PIMIENTA",             "unidad_medida": "KG", "stock_actual": 14.07,    "costo_unitario": 59.58 },
-  { "id": "MPADLQ01", "nombre": "ACIDO FOSFORICO",                  "unidad_medida": "KG", "stock_actual": 141.33,   "costo_unitario": 5.61 },
-  { "id": "PPBATCHEM28", "nombre": "BATCH PARA SALSA SABOR A QUESO CHEDDAR NACIONAL", "unidad_medida": "KG", "stock_actual": 315.24, "costo_unitario": 2.48 },
-  { "id": "MPSBPU10", "nombre": "SABOR A TOMATE 400850",            "unidad_medida": "KG", "stock_actual": 21.68,    "costo_unitario": 35.03 },
-  { "id": "PPBATCHLIQ01", "nombre": "BATCH PARA SALSA DE AJO",       "unidad_medida": "KG", "stock_actual": 3025.78,  "costo_unitario": 0.24 },
-  { "id": "PPBATCHLIQ02", "nombre": "BATCH PARA SALSA INGLESA",      "unidad_medida": "KG", "stock_actual": 1388.13,  "costo_unitario": 0.49 },
-  { "id": "MPSEPV22", "nombre": "PAPRIKA",                          "unidad_medida": "KG", "stock_actual": 73.74,    "costo_unitario": 5.08 },
-  { "id": "PPBATCHEM04", "nombre": "BATCH PARA SALSA SABOR A MAIZ EXPORTACION", "unidad_medida": "KG", "stock_actual": 122.56, "costo_unitario": 2.70 },
-  { "id": "PPBATCHEM31", "nombre": "BATCH ADEREZO DE MOSTAZA SPLASH (CON ALMIDON PRE-GELATINIZADO)", "unidad_medida": "KG", "stock_actual": 324.48, "costo_unitario": 0.83 },
-  { "id": "PPBATCHEM27", "nombre": "BATCH PARA SALSA SABOR A TOCINETA NACIONAL", "unidad_medida": "KG", "stock_actual": 85.19, "costo_unitario": 2.82 },
-  { "id": "PPBATCHEM34", "nombre": "BATCH PARA ADEREZO SABOR A TOCINETA BOLSA L.E", "unidad_medida": "KG", "stock_actual": 232.00, "costo_unitario": 1.03 },
-  { "id": "PPBATCHEM02", "nombre": "BATCH MAYONESA GALON Y KILO",   "unidad_medida": "KG", "stock_actual": 87.40,    "costo_unitario": 2.46 },
-  { "id": "MPSEPV19", "nombre": "OREGANO MOLIDO",                   "unidad_medida": "KG", "stock_actual": 28.10,    "costo_unitario": 6.00 },
-  { "id": "MPCSQI10", "nombre": "METABISULFITO DE SODIO",           "unidad_medida": "KG", "stock_actual": 46.38,    "costo_unitario": 3.07 },
-  { "id": "PPBATCHEM41", "nombre": "BATCH PARA ADEREZO SABOR A TOCINETA BOLSA L.E(ALMIDON PREGEL)", "unidad_medida": "KG", "stock_actual": 92.00, "costo_unitario": 1.30 },
-  { "id": "PPBATCHEM25", "nombre": "BATCH SUBPRODUCTO SALSA TOMATE PARA PICANTINA", "unidad_medida": "KG", "stock_actual": 204.90, "costo_unitario": 0.57 },
-  { "id": "MPADSO05", "nombre": "COLOR ROJO #40 PURO",              "unidad_medida": "KG", "stock_actual": 4.00,     "costo_unitario": 28.33 },
-  { "id": "PPBATCHLIQ03", "nombre": "BATCH PARA SALSA DE SOYA",      "unidad_medida": "KG", "stock_actual": 308.40,   "costo_unitario": 0.34 },
-  { "id": "PPBATCHEM37", "nombre": "BATCH PREPARADO DE MAYONESA (CON AP)", "unidad_medida": "KG", "stock_actual": 81.00, "costo_unitario": 1.24 },
-  { "id": "PPBATCHEM19", "nombre": "BATCH PARA MOSTAZA PREPARADA 800 KG", "unidad_medida": "KG", "stock_actual": 38.40, "costo_unitario": 1.24 }
+  {
+    "id": "MPSEPV17",
+    "nombre": "SABOR QUESO CHEDDAR",
+    "unidad_medida": "KG",
+    "stock_actual": 21409.88,
+    "costo_unitario": 5.9
+  },
+  {
+    "id": "MPGRAC01",
+    "nombre": "ACEITE VEGETAL (E)",
+    "unidad_medida": "KG",
+    "stock_actual": 34085.24,
+    "costo_unitario": 2.75
+  },
+  {
+    "id": "MPSBPV02",
+    "nombre": "CEBOLLA EN POLVO",
+    "unidad_medida": "KG",
+    "stock_actual": 4800.27,
+    "costo_unitario": 15.99
+  },
+  {
+    "id": "MPSEPV15",
+    "nombre": "SABOR A TOCINETA",
+    "unidad_medida": "KG",
+    "stock_actual": 10633.21,
+    "costo_unitario": 6.9
+  },
+  {
+    "id": "MPSBPU02",
+    "nombre": "PASTA P/TOMATE",
+    "unidad_medida": "KG",
+    "stock_actual": 68715.6,
+    "costo_unitario": 0.99
+  },
+  {
+    "id": "PPBATCHEM20",
+    "nombre": "BATCH PREPARADO DE MAYONESA SPLASH (CON ALMIDON)",
+    "unidad_medida": "KG",
+    "stock_actual": 46128.8,
+    "costo_unitario": 1.16
+  },
+  {
+    "id": "MPSEPV14",
+    "nombre": "SABOR A MAÍZ V14",
+    "unidad_medida": "KG",
+    "stock_actual": 1291.92,
+    "costo_unitario": 34.46
+  },
+  {
+    "id": "MPSBDU03",
+    "nombre": "AZUCAR",
+    "unidad_medida": "KG",
+    "stock_actual": 30484.12,
+    "costo_unitario": 1.2
+  },
+  {
+    "id": "MPEPAL01",
+    "nombre": "ALMIDON P/MAIZ (ARCO REX 8416)",
+    "unidad_medida": "KG",
+    "stock_actual": 12480.1,
+    "costo_unitario": 2.51
+  },
+  {
+    "id": "MPEPAL06",
+    "nombre": "ALMIDON PREGELATINIZADO 688WT",
+    "unidad_medida": "KG",
+    "stock_actual": 8029.44,
+    "costo_unitario": 3.9
+  },
+  {
+    "id": "MPSEDU01",
+    "nombre": "HUMO LÍQUIDO",
+    "unidad_medida": "KG",
+    "stock_actual": 2858.5,
+    "costo_unitario": 10.5
+  },
+  {
+    "id": "MPCSQI04",
+    "nombre": "VINAGRE 10%",
+    "unidad_medida": "KG",
+    "stock_actual": 30177.26,
+    "costo_unitario": 0.61
+  },
+  {
+    "id": "MPEPGO02",
+    "nombre": "GOMA XANTHAN",
+    "unidad_medida": "KG",
+    "stock_actual": 2853.83,
+    "costo_unitario": 5.8
+  },
+  {
+    "id": "MPEPAL04",
+    "nombre": "ALMIDON REGULAR ARCO REX 1042346 NATIVO",
+    "unidad_medida": "KG",
+    "stock_actual": 8739.3,
+    "costo_unitario": 1.56
+  },
+  {
+    "id": "MPCSQI09",
+    "nombre": "JUGO DE LIMON CONCENTRADO",
+    "unidad_medida": "KG",
+    "stock_actual": 3138.1,
+    "costo_unitario": 4.21
+  },
+  {
+    "id": "MPADLQ14",
+    "nombre": "GLUCOSA (2313)",
+    "unidad_medida": "KG",
+    "stock_actual": 3510.2,
+    "costo_unitario": 2.57
+  },
+  {
+    "id": "MPSBDU02",
+    "nombre": "ASPARTAME",
+    "unidad_medida": "KG",
+    "stock_actual": 269.57,
+    "costo_unitario": 30.0
+  },
+  {
+    "id": "MPSBPV03",
+    "nombre": "BENZOATO DE SODIO",
+    "unidad_medida": "KG",
+    "stock_actual": 2794.82,
+    "costo_unitario": 2.88
+  },
+  {
+    "id": "MPSELQ08",
+    "nombre": "OLEORRESINA P/MAIZ",
+    "unidad_medida": "KG",
+    "stock_actual": 180.65,
+    "costo_unitario": 42.0
+  },
+  {
+    "id": "PPBATCHEM11",
+    "nombre": "BATCH PARA SALSA B.B.Q.",
+    "unidad_medida": "KG",
+    "stock_actual": 4917.84,
+    "costo_unitario": 1.27
+  },
+  {
+    "id": "MPSBSL01",
+    "nombre": "SAL",
+    "unidad_medida": "KG",
+    "stock_actual": 20360.65,
+    "costo_unitario": 0.3
+  },
+  {
+    "id": "MPCSQI04",
+    "nombre": "EDTA",
+    "unidad_medida": "KG",
+    "stock_actual": 1053.25,
+    "costo_unitario": 5.15
+  },
+  {
+    "id": "MPADLQ04",
+    "nombre": "CARAMELINA (1123)",
+    "unidad_medida": "KG",
+    "stock_actual": 1535.5,
+    "costo_unitario": 3.42
+  },
+  {
+    "id": "MPCSQI07",
+    "nombre": "SORBATO P/POTASIO",
+    "unidad_medida": "KG",
+    "stock_actual": 1332.12,
+    "costo_unitario": 3.83
+  },
+  {
+    "id": "MPSEPV13",
+    "nombre": "SABOR A MAIZ V13",
+    "unidad_medida": "KG",
+    "stock_actual": 436.2,
+    "costo_unitario": 11.31
+  },
+  {
+    "id": "MPSELQ07",
+    "nombre": "OLEORRESINA CEBOLLA",
+    "unidad_medida": "KG",
+    "stock_actual": 24.93,
+    "costo_unitario": 194.4
+  },
+  {
+    "id": "MPADSO03",
+    "nombre": "COLOR ROJO",
+    "unidad_medida": "KG",
+    "stock_actual": 217.74,
+    "costo_unitario": 21.4
+  },
+  {
+    "id": "MPSBLQ08",
+    "nombre": "SABOR A KETCHUP F51797",
+    "unidad_medida": "KG",
+    "stock_actual": 26.89,
+    "costo_unitario": 173.14
+  },
+  {
+    "id": "MPSBPV01",
+    "nombre": "CANELA",
+    "unidad_medida": "KG",
+    "stock_actual": 216.3,
+    "costo_unitario": 18.0
+  },
+  {
+    "id": "PPSBLQ01",
+    "nombre": "PULPA DE AJI PICANTE",
+    "unidad_medida": "KG",
+    "stock_actual": 4351.6,
+    "costo_unitario": 0.74
+  },
+  {
+    "id": "MPSEPV03",
+    "nombre": "CLAVO MOLIDO",
+    "unidad_medida": "KG",
+    "stock_actual": 104.5,
+    "costo_unitario": 30.0
+  },
+  {
+    "id": "MPSBLQ03",
+    "nombre": "AGUA SUAVIZADA",
+    "unidad_medida": "KG",
+    "stock_actual": 1147124.82,
+    "costo_unitario": 0.003
+  },
+  {
+    "id": "MPSEPV10",
+    "nombre": "PVH TIPO S SOYA (HPS)",
+    "unidad_medida": "KG",
+    "stock_actual": 709.05,
+    "costo_unitario": 4.31
+  },
+  {
+    "id": "MPSBAI01",
+    "nombre": "ACIDO CITRICO",
+    "unidad_medida": "KG",
+    "stock_actual": 1441.6,
+    "costo_unitario": 1.98
+  },
+  {
+    "id": "MPSELQ10",
+    "nombre": "OLEORRESINA MOSTAZA",
+    "unidad_medida": "KG",
+    "stock_actual": 33.0,
+    "costo_unitario": 75.77
+  },
+  {
+    "id": "MPSEPV23",
+    "nombre": "MANTEQUILLA POLVO 401441",
+    "unidad_medida": "KG",
+    "stock_actual": 173.42,
+    "costo_unitario": 13.29
+  },
+  {
+    "id": "MPADSO01",
+    "nombre": "COLOR AMARILLO",
+    "unidad_medida": "KG",
+    "stock_actual": 196.16,
+    "costo_unitario": 11.31
+  },
+  {
+    "id": "MPSELQ25",
+    "nombre": "BASE P/SALSA DE SOYA 481-14",
+    "unidad_medida": "KG",
+    "stock_actual": 581.0,
+    "costo_unitario": 3.5
+  },
+  {
+    "id": "MPSELQ24",
+    "nombre": "BASE P/SALSA INGLESA 480-14",
+    "unidad_medida": "KG",
+    "stock_actual": 560.17,
+    "costo_unitario": 3.5
+  },
+  {
+    "id": "MPSEPV04",
+    "nombre": "CURCUMA EN POLVO",
+    "unidad_medida": "KG",
+    "stock_actual": 240.0,
+    "costo_unitario": 7.71
+  },
+  {
+    "id": "PPBATCHEM05",
+    "nombre": "BATCH PARA SALSA SABOR A TOCINETA EXPORTACION",
+    "unidad_medida": "KG",
+    "stock_actual": 319.74,
+    "costo_unitario": 5.73
+  },
+  {
+    "id": "PPBATCHEM35",
+    "nombre": "BATCH PARA PREPARADO DE MAYONESA DELI",
+    "unidad_medida": "KG",
+    "stock_actual": 2029.2,
+    "costo_unitario": 0.83
+  },
+  {
+    "id": "MPSBAI02",
+    "nombre": "GLUTAMATO MONOSODICO",
+    "unidad_medida": "KG",
+    "stock_actual": 468.17,
+    "costo_unitario": 3.55
+  },
+  {
+    "id": "PPSBLQ02",
+    "nombre": "PULPA DE AJI DULCE",
+    "unidad_medida": "KG",
+    "stock_actual": 895.6,
+    "costo_unitario": 1.72
+  },
+  {
+    "id": "MPSELQ23",
+    "nombre": "BASE P/SALSA DE AJO 532-15B",
+    "unidad_medida": "KG",
+    "stock_actual": 422.55,
+    "costo_unitario": 3.31
+  },
+  {
+    "id": "MPSFPOL01",
+    "nombre": "COMINO MOLINO",
+    "unidad_medida": "KG",
+    "stock_actual": 85.81,
+    "costo_unitario": 14.95
+  },
+  {
+    "id": "MPSELQ06",
+    "nombre": "OLEORRESINA AJO",
+    "unidad_medida": "KG",
+    "stock_actual": 22.88,
+    "costo_unitario": 52.54
+  },
+  {
+    "id": "MPADSO06",
+    "nombre": "COLOR AMARILLO #5 PURO",
+    "unidad_medida": "KG",
+    "stock_actual": 80.45,
+    "costo_unitario": 14.93
+  },
+  {
+    "id": "PPBATCHEM32",
+    "nombre": "BATCH PARA ADEREZO SABOR A MAIZ BOLSA L.E",
+    "unidad_medida": "KG",
+    "stock_actual": 1144.0,
+    "costo_unitario": 1.03
+  },
+  {
+    "id": "PPBATCHEM40",
+    "nombre": "BATCH PARA ADEREZO SABOR A QUESO CHEDDAR BOLSA L.E (ALMIDON PREGEL)",
+    "unidad_medida": "KG",
+    "stock_actual": 754.0,
+    "costo_unitario": 1.54
+  },
+  {
+    "id": "PPBATCHEM33",
+    "nombre": "BATCH PARA ADEREZO SABOR A QUESO CHEDDAR BOLSA L.E",
+    "unidad_medida": "KG",
+    "stock_actual": 976.0,
+    "costo_unitario": 1.16
+  },
+  {
+    "id": "MPSBPU11",
+    "nombre": "PULPA DE AJI PICANTE JALAPEÑO ROJO",
+    "unidad_medida": "KG",
+    "stock_actual": 434.9,
+    "costo_unitario": 2.52
+  },
+  {
+    "id": "MPADSO02",
+    "nombre": "COLOR NARANJA (BACKER)",
+    "unidad_medida": "KG",
+    "stock_actual": 109.8,
+    "costo_unitario": 9.0
+  },
+  {
+    "id": "PPBATCHEM26",
+    "nombre": "BATCH PARA SALSA SABOR A MAIZ NACIONAL",
+    "unidad_medida": "KG",
+    "stock_actual": 332.68,
+    "costo_unitario": 2.7
+  },
+  {
+    "id": "PPBATCHEM30",
+    "nombre": "BATCH PARA SALSA A BASE DE TOMATE LINEA ECONOMICA",
+    "unidad_medida": "KG",
+    "stock_actual": 1399.68,
+    "costo_unitario": 0.62
+  },
+  {
+    "id": "MPSELQ11",
+    "nombre": "OLEORRESINA PIMIENTA",
+    "unidad_medida": "KG",
+    "stock_actual": 14.07,
+    "costo_unitario": 59.58
+  },
+  {
+    "id": "MPADLQ01",
+    "nombre": "ACIDO FOSFORICO",
+    "unidad_medida": "KG",
+    "stock_actual": 141.33,
+    "costo_unitario": 5.61
+  },
+  {
+    "id": "PPBATCHEM28",
+    "nombre": "BATCH PARA SALSA SABOR A QUESO CHEDDAR NACIONAL",
+    "unidad_medida": "KG",
+    "stock_actual": 315.24,
+    "costo_unitario": 2.48
+  },
+  {
+    "id": "MPSBPU10",
+    "nombre": "SABOR A TOMATE 400850",
+    "unidad_medida": "KG",
+    "stock_actual": 21.68,
+    "costo_unitario": 35.03
+  },
+  {
+    "id": "PPBATCHLIQ01",
+    "nombre": "BATCH PARA SALSA DE AJO",
+    "unidad_medida": "KG",
+    "stock_actual": 3025.78,
+    "costo_unitario": 0.24
+  },
+  {
+    "id": "PPBATCHLIQ02",
+    "nombre": "BATCH PARA SALSA INGLESA",
+    "unidad_medida": "KG",
+    "stock_actual": 1388.13,
+    "costo_unitario": 0.49
+  },
+  {
+    "id": "MPSEPV22",
+    "nombre": "PAPRIKA",
+    "unidad_medida": "KG",
+    "stock_actual": 73.74,
+    "costo_unitario": 5.08
+  },
+  {
+    "id": "PPBATCHEM04",
+    "nombre": "BATCH PARA SALSA SABOR A MAIZ EXPORTACION",
+    "unidad_medida": "KG",
+    "stock_actual": 122.56,
+    "costo_unitario": 2.7
+  },
+  {
+    "id": "PPBATCHEM31",
+    "nombre": "BATCH ADEREZO DE MOSTAZA SPLASH (CON ALMIDON PRE-GELATINIZADO)",
+    "unidad_medida": "KG",
+    "stock_actual": 324.48,
+    "costo_unitario": 0.83
+  },
+  {
+    "id": "PPBATCHEM27",
+    "nombre": "BATCH PARA SALSA SABOR A TOCINETA NACIONAL",
+    "unidad_medida": "KG",
+    "stock_actual": 85.19,
+    "costo_unitario": 2.82
+  },
+  {
+    "id": "PPBATCHEM34",
+    "nombre": "BATCH PARA ADEREZO SABOR A TOCINETA BOLSA L.E",
+    "unidad_medida": "KG",
+    "stock_actual": 232.0,
+    "costo_unitario": 1.03
+  },
+  {
+    "id": "PPBATCHEM02",
+    "nombre": "BATCH MAYONESA GALON Y KILO",
+    "unidad_medida": "KG",
+    "stock_actual": 87.4,
+    "costo_unitario": 2.46
+  },
+  {
+    "id": "MPSEPV19",
+    "nombre": "OREGANO MOLIDO",
+    "unidad_medida": "KG",
+    "stock_actual": 28.1,
+    "costo_unitario": 6.0
+  },
+  {
+    "id": "MPCSQI10",
+    "nombre": "METABISULFITO DE SODIO",
+    "unidad_medida": "KG",
+    "stock_actual": 46.38,
+    "costo_unitario": 3.07
+  },
+  {
+    "id": "PPBATCHEM41",
+    "nombre": "BATCH PARA ADEREZO SABOR A TOCINETA BOLSA L.E(ALMIDON PREGEL)",
+    "unidad_medida": "KG",
+    "stock_actual": 92.0,
+    "costo_unitario": 1.3
+  },
+  {
+    "id": "PPBATCHEM25",
+    "nombre": "BATCH SUBPRODUCTO SALSA TOMATE PARA PICANTINA",
+    "unidad_medida": "KG",
+    "stock_actual": 204.9,
+    "costo_unitario": 0.57
+  },
+  {
+    "id": "MPADSO05",
+    "nombre": "COLOR ROJO #40 PURO",
+    "unidad_medida": "KG",
+    "stock_actual": 4.0,
+    "costo_unitario": 28.33
+  },
+  {
+    "id": "PPBATCHLIQ03",
+    "nombre": "BATCH PARA SALSA DE SOYA",
+    "unidad_medida": "KG",
+    "stock_actual": 308.4,
+    "costo_unitario": 0.34
+  },
+  {
+    "id": "PPBATCHEM37",
+    "nombre": "BATCH PREPARADO DE MAYONESA (CON AP)",
+    "unidad_medida": "KG",
+    "stock_actual": 81.0,
+    "costo_unitario": 1.24
+  },
+  {
+    "id": "PPBATCHEM19",
+    "nombre": "BATCH PARA MOSTAZA PREPARADA 800 KG",
+    "unidad_medida": "KG",
+    "stock_actual": 38.4,
+    "costo_unitario": 1.24
+  }
 ]
