@@ -1,26 +1,29 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { obtenerInventario, obtenerVendedores } from '../service/connection';
-import { useUser } from '../hooks/useUser';
-import { crearRequerimiento, obtenerPromedioVentasSKU } from '../service/connection';
+import { useEffect, useState } from "react";
+import { useUser } from "../hooks/useUser";
+import {
+  crearRequerimiento,
+  obtenerInventario,
+  obtenerVendedores,
+} from "../service/connection";
 
-const SolicitudRequerimientoForm = ({fetchRequerimientos}) => {
+const SolicitudRequerimientoForm = ({ fetchRequerimientos }) => {
   const { user } = useUser();
   const u = Array.isArray(user) ? user[0] : user;
   const [inventario, setInventario] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-const [vendedores, setVendedores]= useState([]);
+  const [error, setError] = useState("");
+  const [vendedores, setVendedores] = useState([]);
   const [form, setForm] = useState({
-    codigo_vendedor: String(u?.codigo_vendedor) || '',
-    sku_producto: '',
-    cantidad_solicitada: '',
-    fecha_solicitud: '',
-    comentario: ''
+    codigo_vendedor: String(u?.codigo_vendedor) || "",
+    sku_producto: "",
+    cantidad_solicitada: "",
+    fecha_solicitud: "",
+    comentario: "",
   });
 
-//   const [promedio, setPromedio] = useState(null);
-//   const [checkingPromedio, setCheckingPromedio] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
+  //   const [promedio, setPromedio] = useState(null);
+  //   const [checkingPromedio, setCheckingPromedio] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
 
   // Cargar inventario para selector de SKU
   const cargarInventario = async () => {
@@ -28,20 +31,20 @@ const [vendedores, setVendedores]= useState([]);
       const data = await obtenerInventario();
       setInventario(data);
     } catch (err) {
-      console.error('Inventario error:', err);
-      setError('No se pudo cargar inventario');
+      console.error("Inventario error:", err);
+      setError("No se pudo cargar inventario");
     } finally {
       setLoading(false);
     }
   };
-//vendedores
+  //vendedores
   const cargarVendedores = async () => {
     try {
       const data = await obtenerVendedores();
       setVendedores(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Vendedores error:', err);
-      setError('No se pudo cargar vendedores');
+      console.error("Vendedores error:", err);
+      setError("No se pudo cargar vendedores");
     } finally {
       setLoading(false);
     }
@@ -57,53 +60,55 @@ const [vendedores, setVendedores]= useState([]);
     const hora = now.toTimeString().slice(0, 8);
     setForm((prev) => ({
       ...prev,
-      codigo_vendedor: String(u?.codigo_vendedor) || '',
+      codigo_vendedor: String(u?.codigo_vendedor) || "",
       fecha,
       hora,
     }));
   }, [u, vendedores]);
 
-
-
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
-    if (name === 'sku_producto') {
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+    if (name === "sku_producto") {
       // limpiar promedio al cambiar SKU
-    //   setPromedio(null);
+      //   setPromedio(null);
     }
   };
 
   const validar = () => {
-    if (!form.codigo_vendedor) return 'El vendedor es requerido';
-    if (!form.sku_producto) return 'El SKU es requerido';
-    if (!form.cantidad_solicitada || Number(form.cantidad_solicitada) <= 0) return 'Cantidad inválida';
-    return '';
+    if (!form.codigo_vendedor) return "El vendedor es requerido";
+    if (!form.sku_producto) return "El SKU es requerido";
+    if (!form.cantidad_solicitada || Number(form.cantidad_solicitada) <= 0)
+      return "Cantidad inválida";
+    return "";
   };
 
-//   const verificarPromedio = async () => {
-//     if (!form.sku) return;
-//     try {
-//       setCheckingPromedio(true);
-//       const data = await obtenerPromedioVentasSKU(form.sku);
-//       // Esperamos un número. Si no hay endpoint, podría ser null.
-//       const prom = typeof data === 'number' ? data : Number(data?.promedio || 0) || null;
-//       setPromedio(prom);
-//       if (prom && Number(form.cantidad) > prom) {
-//         setForm((p) => ({ ...p, requiereAprobacion: true }));
-//       }
-//     } catch (err) {
-//       console.error('Promedio error:', err);
-//       setPromedio(null);
-//     } finally {
-//       setCheckingPromedio(false);
-//     }
-//   };
+  //   const verificarPromedio = async () => {
+  //     if (!form.sku) return;
+  //     try {
+  //       setCheckingPromedio(true);
+  //       const data = await obtenerPromedioVentasSKU(form.sku);
+  //       // Esperamos un número. Si no hay endpoint, podría ser null.
+  //       const prom = typeof data === 'number' ? data : Number(data?.promedio || 0) || null;
+  //       setPromedio(prom);
+  //       if (prom && Number(form.cantidad) > prom) {
+  //         setForm((p) => ({ ...p, requiereAprobacion: true }));
+  //       }
+  //     } catch (err) {
+  //       console.error('Promedio error:', err);
+  //       setPromedio(null);
+  //     } finally {
+  //       setCheckingPromedio(false);
+  //     }
+  //   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccessMsg('');
+    setError("");
+    setSuccessMsg("");
 
     const msg = validar();
     if (msg) {
@@ -112,42 +117,45 @@ const [vendedores, setVendedores]= useState([]);
     }
 
     const payload = {
-        codigo_vendedor: u?.codigo_vendedor,
-        sku_producto: form.sku_producto.trim(),
-        cantidad_solicitada: Number(form.cantidad_solicitada),
-        fecha_solicitud: form.fecha_solicitud,
-      comentario: form.comentario || ''
+      codigo_vendedor: u?.codigo_vendedor,
+      sku_producto: form.sku_producto.trim(),
+      cantidad_solicitada: Number(form.cantidad_solicitada),
+      fecha_solicitud: form.fecha_solicitud,
+      comentario: form.comentario || "",
     };
 
     try {
       await crearRequerimiento(payload);
       // Si el backend responde OK
-      setSuccessMsg('Solicitud registrada correctamente');
+      setSuccessMsg("Solicitud registrada correctamente");
       // limpiar cantidad y comentario
       setForm((p) => ({
         ...p,
-        sku_producto: '',
-        cantidad_solicitada: '',
-        comentario: '',
+        sku_producto: "",
+        cantidad_solicitada: "",
+        comentario: "",
       }));
       fetchRequerimientos();
     } catch (err) {
-      console.error('Crear requerimiento error:', err);
-      setError('No se pudo registrar la solicitud');
+      console.error("Crear requerimiento error:", err);
+      setError("No se pudo registrar la solicitud");
     }
   };
-console.log("vendedores", vendedores)
-console.log("inventario", inventario)
-console.log("user", u)
-console.log("form", form)
-  if(!u || !inventario || !vendedores){
+  console.log("vendedores", vendedores);
+  console.log("inventario", inventario);
+  console.log("user", u);
+  console.log("form", form);
+  if (!u || !inventario || !vendedores) {
     return (
-        <div className="d-flex justify-content-center align-items-center" style={{minHeight:'60vh'}}>
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Cargando...</span>
-          </div>
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ minHeight: "60vh" }}
+      >
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Cargando...</span>
         </div>
-      )
+      </div>
+    );
   }
 
   return (
@@ -171,7 +179,11 @@ console.log("form", form)
               type="text"
               className="form-control"
               name="codigo_vendedor"
-              value={vendedores.find(v => String(v.co_ven) === String(u?.codigo_vendedor))?.ven_des || ''}
+              value={
+                vendedores.find(
+                  (v) => String(v.co_ven) === String(u?.codigo_vendedor),
+                )?.ven_des || ""
+              }
               required
               readOnly
             />
@@ -187,8 +199,13 @@ console.log("form", form)
               disabled={loading}
             >
               <option value="">Seleccione un SKU</option>
-              {inventario && inventario.map((opt) => (
-                <option key={`${opt.co_art} - ${opt.co_alma}`} value={opt.co_art}>{opt.art_des}</option>
+              {inventario?.map((opt) => (
+                <option
+                  key={`${opt.co_art} - ${opt.co_alma}`}
+                  value={opt.co_art}
+                >
+                  {opt.art_des}
+                </option>
               ))}
             </select>
           </div>
@@ -208,12 +225,18 @@ console.log("form", form)
 
           <div className="col-md-4">
             <label className="form-label">Fecha</label>
-            <input type="date" className="form-control" name="fecha_solicitud" value={form.fecha_solicitud} onChange={handleChange} required />
+            <input
+              type="date"
+              className="form-control"
+              name="fecha_solicitud"
+              value={form.fecha_solicitud}
+              onChange={handleChange}
+              required
+            />
           </div>
-        
-          </div>
+        </div>
 
-          {/* <div className="col-12 d-flex align-items-center gap-2">
+        {/* <div className="col-12 d-flex align-items-center gap-2">
             <button type="button" className="btn btn-outline-secondary" onClick={verificarPromedio} disabled={!form.sku || checkingPromedio}>
               {checkingPromedio ? (
                 <>
@@ -239,19 +262,23 @@ console.log("form", form)
             </div>
           )} */}
 
-          <div className="col-12">
-            <label className="form-label">Comentario (opcional)</label>
-            <textarea className="form-control" name="comentario" rows={3} value={form.comentario} onChange={handleChange} placeholder="Detalle adicional o motivo"></textarea>
-          </div>
+        <div className="col-12">
+          <label className="form-label">Comentario (opcional)</label>
+          <textarea
+            className="form-control"
+            name="comentario"
+            rows={3}
+            value={form.comentario}
+            onChange={handleChange}
+            placeholder="Detalle adicional o motivo"
+          ></textarea>
+        </div>
 
-         
-
-          <div className="col-12 d-grid d-sm-flex gap-2">
-            <button type="submit" className="btn btn-primary">
-              <i className="bi bi-send me-2" /> Registrar solicitud
-            </button>
-          </div>
-     
+        <div className="col-12 d-grid d-sm-flex gap-2">
+          <button type="submit" className="btn btn-primary">
+            <i className="bi bi-send me-2" /> Registrar solicitud
+          </button>
+        </div>
       </form>
     </div>
   );

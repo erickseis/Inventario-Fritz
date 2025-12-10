@@ -1,28 +1,57 @@
-import React, { useState } from 'react';
-import { useData } from '../hooks/useData';
-import DataTable from '../components/DataTable';
-import FormModal from '../components/FormModal';
+import { useState } from "react";
+import DataTable from "../components/DataTable";
+import FormModal from "../components/FormModal";
+import { useData } from "../hooks/useData";
 
 const Ventas = () => {
-  const { data: ventas, addItem } = useData('ventas');
-  const { data: productos } = useData('productos');
+  const { data: ventas, addItem } = useData("ventas");
+  const { data: productos } = useData("productos");
   const [showModal, setShowModal] = useState(false);
 
   const columns = [
-    { key: 'id', label: 'ID' },
-    { key: 'fecha', label: 'Fecha', sortable: true, render: (value) => new Date(value).toLocaleDateString() },
-    { key: 'producto_nombre', label: 'Producto', sortable: true },
-    { key: 'cantidad_vendida', label: 'Cantidad', sortable: true, render: (value) => `${value} un` },
-    { key: 'precio_unitario', label: 'Precio Unitario', sortable: true, render: (value) => `$${parseFloat(value).toFixed(2)}` },
-    { key: 'total', label: 'Total', sortable: true, render: (value) => `$${parseFloat(value).toFixed(2)}` }
+    { key: "id", label: "ID" },
+    {
+      key: "fecha",
+      label: "Fecha",
+      sortable: true,
+      render: (value) => new Date(value).toLocaleDateString(),
+    },
+    { key: "producto_nombre", label: "Producto", sortable: true },
+    {
+      key: "cantidad_vendida",
+      label: "Cantidad",
+      sortable: true,
+      render: (value) => `${value} un`,
+    },
+    {
+      key: "precio_unitario",
+      label: "Precio Unitario",
+      sortable: true,
+      render: (value) => `$${parseFloat(value).toFixed(2)}`,
+    },
+    {
+      key: "total",
+      label: "Total",
+      sortable: true,
+      render: (value) => `$${parseFloat(value).toFixed(2)}`,
+    },
   ];
 
   const formFields = [
-    { name: 'fecha', label: 'Fecha', type: 'date', required: true },
-    { name: 'producto_id', label: 'Producto', type: 'select', required: true, options: 
-      productos.map(p => ({ value: p.id, label: p.nombre }))
+    { name: "fecha", label: "Fecha", type: "date", required: true },
+    {
+      name: "producto_id",
+      label: "Producto",
+      type: "select",
+      required: true,
+      options: productos.map((p) => ({ value: p.id, label: p.nombre })),
     },
-    { name: 'cantidad_vendida', label: 'Cantidad', type: 'number', required: true }
+    {
+      name: "cantidad_vendida",
+      label: "Cantidad",
+      type: "number",
+      required: true,
+    },
   ];
 
   const handleAdd = () => {
@@ -30,12 +59,15 @@ const Ventas = () => {
   };
 
   const handleSubmit = (formData) => {
-    const producto = productos.find(p => p.id === parseInt(formData.producto_id));
+    const producto = productos.find(
+      (p) => p.id === parseInt(formData.producto_id, 10),
+    );
     const newVenta = {
       ...formData,
       producto_nombre: producto.nombre,
       precio_unitario: producto.precio,
-      total: parseFloat(formData.cantidad_vendida) * parseFloat(producto.precio)
+      total:
+        parseFloat(formData.cantidad_vendida) * parseFloat(producto.precio),
     };
     addItem(newVenta);
   };

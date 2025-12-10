@@ -1,17 +1,21 @@
-import React, { useState, useEffect, useContext, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import MetricCard from '../components/MetricCard';
-import SalesChart from '../components/SalesChart';
-import { obtenerInventario, obtenerStockMin, obtenerMovimientoSKU, obtenerVendedores } from '../service/connection';
-import { useUser } from '../hooks/useUser';
-import { useInventarioSolicitudes } from '../hooks/useInventarioSolicitud.hook';
-import { DataMovimientosContext } from '../hooks/movimientos.context';
-
+import { useContext, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import MetricCard from "../components/MetricCard";
+import SalesChart from "../components/SalesChart";
+import { DataMovimientosContext } from "../hooks/movimientos.context";
+import { useInventarioSolicitudes } from "../hooks/useInventarioSolicitud.hook";
+import { useUser } from "../hooks/useUser";
+import {
+  obtenerInventario,
+  obtenerMovimientoSKU,
+  obtenerStockMin,
+  obtenerVendedores,
+} from "../service/connection";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useUser();
-  
+
   // Redirect role 3 users to inventario
   useEffect(() => {
     if (user) {
@@ -19,14 +23,14 @@ const Dashboard = () => {
       const roleValue = u?.rol ?? u?.cargo;
       const numericRole = roleValue != null ? Number(roleValue) : undefined;
       if (numericRole === 3) {
-        navigate('/inventario', { replace: true });
+        navigate("/inventario", { replace: true });
       }
     }
   }, [user, navigate]);
-  const {dataArticulos} = useContext(DataMovimientosContext)
-  const {solicitudesInventario} = useInventarioSolicitudes()
+  const { dataArticulos } = useContext(DataMovimientosContext);
+  const { solicitudesInventario } = useInventarioSolicitudes();
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedLocation, setSelectedLocation] = useState('all');
+  const [selectedLocation, setSelectedLocation] = useState("all");
   const [movimientosSKU, setMovimientosSKU] = useState([]);
   const [topItems, setTopItems] = useState([]);
   const [topMonths, setTopMonths] = useState(1); // 1,2,3,6,12
@@ -34,14 +38,14 @@ const Dashboard = () => {
   const [dataStockMinimo, setDataStockMinimo] = useState([]);
   const [vendedores, setVendedores] = useState([]);
 
-  const fetchVendedores =async()=>{
+  const fetchVendedores = async () => {
     try {
       const data = await obtenerVendedores();
       setVendedores(data);
     } catch (error) {
       console.error("Error al obtener vendedores", error);
     }
-  }
+  };
   const fetchDataInventario = async () => {
     try {
       const data = await obtenerInventario();
@@ -66,57 +70,61 @@ const Dashboard = () => {
     fetchDataInventario();
     fetchStockMinimo();
     fetchVendedores();
-
-  }, [])
-console.log('vendedores',vendedores)
+  }, []);
+  console.log("vendedores", vendedores);
   const almacenes = [
-    {co_alma: "7020", nombre: "Barquisimeto principal"},
-    {co_alma: "8010", nombre: "Maracaibo (Occidente)"},
-    {co_alma: "8060", nombre: "Barcelona (Oriente)"},
-    {co_alma: "8070", nombre: "Santa Cruz (Estado Aragua Centro)"},
-    {co_alma: "8090", nombre: "Prueba Piloto Capital"}
-  ]
+    { co_alma: "7020", nombre: "Barquisimeto principal" },
+    { co_alma: "8010", nombre: "Maracaibo (Occidente)" },
+    { co_alma: "8060", nombre: "Barcelona (Oriente)" },
+    { co_alma: "8070", nombre: "Santa Cruz (Estado Aragua Centro)" },
+    { co_alma: "8090", nombre: "Prueba Piloto Capital" },
+  ];
 
   // Función helper para obtener stock mínimo desde dataStockMinimo
   const getStockMinimo = (co_art) => {
-    const stockMinData = dataStockMinimo.find(item => 
-      String(item.co_art).trim() === String(co_art)?.trim()
+    const stockMinData = dataStockMinimo.find(
+      (item) => String(item.co_art).trim() === String(co_art)?.trim(),
     );
     return stockMinData ? stockMinData.stock_min : null;
   };
 
   // Función para filtrar productos por almacenes específicos
   const filtrarProductosPorAlmacen = (data = dataInventario) => {
-    const codigosAlmacen = selectedLocation === 'all' ?
-     almacenes.map(almacen => almacen.co_alma)
-     :
-     selectedLocation;
-    return data.filter(item => 
-      codigosAlmacen.includes(item.co_alma?.trim())
-    );
-  }
+    const codigosAlmacen =
+      selectedLocation === "all"
+        ? almacenes.map((almacen) => almacen.co_alma)
+        : selectedLocation;
+    return data.filter((item) => codigosAlmacen.includes(item.co_alma?.trim()));
+  };
 
   // Obtener productos filtrados
   const cantidadTotaldeProductos = filtrarProductosPorAlmacen().length;
 
-  const stockTotaldeProductosDisponible = filtrarProductosPorAlmacen().filter(producto => {
-    const stockDisponible = (producto.stock_act || 0) - (producto.stock_com || 0);
-    return stockDisponible > 0;
-  }).length;
+  const stockTotaldeProductosDisponible = filtrarProductosPorAlmacen().filter(
+    (producto) => {
+      const stockDisponible =
+        (producto.stock_act || 0) - (producto.stock_com || 0);
+      return stockDisponible > 0;
+    },
+  ).length;
 
   // configurar stock minimo para obtener el stock bajo
-  const stockTotaldeProductosBajo = filtrarProductosPorAlmacen().filter(producto => {
-    const stockDisponible = (producto.stock_act || 0) - (producto.stock_com || 0);
-    const stockMinimoReal = getStockMinimo(producto?.co_art) || 0;
-    return stockDisponible > 0 && stockDisponible <= stockMinimoReal;
-  }).length;
+  const stockTotaldeProductosBajo = filtrarProductosPorAlmacen().filter(
+    (producto) => {
+      const stockDisponible =
+        (producto.stock_act || 0) - (producto.stock_com || 0);
+      const stockMinimoReal = getStockMinimo(producto?.co_art) || 0;
+      return stockDisponible > 0 && stockDisponible <= stockMinimoReal;
+    },
+  ).length;
 
-  const sinStockDeProductos = filtrarProductosPorAlmacen().filter(producto => {
-    const stockDisponible = (producto.stock_act || 0) - (producto.stock_com || 0);
-    return stockDisponible === 0;
-  }).length;
-
- 
+  const sinStockDeProductos = filtrarProductosPorAlmacen().filter(
+    (producto) => {
+      const stockDisponible =
+        (producto.stock_act || 0) - (producto.stock_com || 0);
+      return stockDisponible === 0;
+    },
+  ).length;
 
   // Cargar movimientos por SKU (para top 5 más vendidos)
   useEffect(() => {
@@ -126,12 +134,14 @@ console.log('vendedores',vendedores)
         const data = await obtenerMovimientoSKU();
         if (!cancelled) setMovimientosSKU(Array.isArray(data) ? data : []);
       } catch (e) {
-        console.error('Error obteniendo movimientos SKU:', e?.message || e);
+        console.error("Error obteniendo movimientos SKU:", e?.message || e);
         if (!cancelled) setMovimientosSKU([]);
       }
     };
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Calcular top 5 artículos por total de cajas vendidas
@@ -142,7 +152,7 @@ console.log('vendedores',vendedores)
     }
 
     // Helper meses
-    const pad2 = (n) => String(n).padStart(2, '0');
+    const pad2 = (n) => String(n).padStart(2, "0");
     const getLastNMonths = (n) => {
       const now = new Date();
       const out = [];
@@ -156,18 +166,24 @@ console.log('vendedores',vendedores)
 
     // Filtrar por meses seleccionados (usa m.mes o deriva de m.fecha)
     const filtrados = movimientosSKU.filter((m) => {
-      const mes = m?.mes || (m?.fecha ? `${new Date(m.fecha).getFullYear()}-${pad2(new Date(m.fecha).getMonth() + 1)}` : null);
+      const mes =
+        m?.mes ||
+        (m?.fecha
+          ? `${new Date(m.fecha).getFullYear()}-${pad2(new Date(m.fecha).getMonth() + 1)}`
+          : null);
       return mes && months.has(String(mes));
     });
 
     const acumulado = {};
-    filtrados.forEach(m => {
-      const co = String(m?.co_art || '').trim();
+    filtrados.forEach((m) => {
+      const co = String(m?.co_art || "").trim();
       if (!co) return;
       const cajas = Number(m?.total_cajas_vendidas || 0);
       acumulado[co] = (acumulado[co] || 0) + cajas;
     });
-    const inventarioBySKU = new Map((dataInventario || []).map(p => [String(p.co_art).trim(), p]));
+    const inventarioBySKU = new Map(
+      (dataInventario || []).map((p) => [String(p.co_art).trim(), p]),
+    );
     const lista = Object.entries(acumulado)
       .map(([co, value]) => {
         const prod = inventarioBySKU.get(co);
@@ -178,37 +194,50 @@ console.log('vendedores',vendedores)
       .slice(0, 5);
     setTopItems(lista);
   }, [movimientosSKU, dataInventario, topMonths]);
-// arriba, después de tomar dataArticulos del context
-const articulosNombreMap = useMemo(() => {
-  if (!Array.isArray(dataArticulos)) return {};
-  const map = {};
-  for (const a of dataArticulos) {
-    const key = (a?.co_art || '').trim().toUpperCase();
-    if (key) map[key] = a?.art_des || '';
-  }
-  return map;
-}, [dataArticulos]);
+  // arriba, después de tomar dataArticulos del context
+  const articulosNombreMap = useMemo(() => {
+    if (!Array.isArray(dataArticulos)) return {};
+    const map = {};
+    for (const a of dataArticulos) {
+      const key = (a?.co_art || "").trim().toUpperCase();
+      if (key) map[key] = a?.art_des || "";
+    }
+    return map;
+  }, [dataArticulos]);
 
-  if(isLoading){
+  if (isLoading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{minHeight:'60vh'}}>
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ minHeight: "60vh" }}
+      >
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Cargando...</span>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="container py-3">
       <div className="card border-0 shadow-sm overflow-hidden mb-3">
-        <div className="p-4 d-flex align-items-center justify-content-between" style={{background: 'linear-gradient(90deg, #0d6efd 0%, #6ea8fe 100%)'}}>
+        <div
+          className="p-4 d-flex align-items-center justify-content-between"
+          style={{
+            background: "linear-gradient(90deg, #0d6efd 0%, #6ea8fe 100%)",
+          }}
+        >
           <div className="d-flex align-items-center gap-2 text-white">
             <i className="bi bi-speedometer2"></i>
             <h5 className="mb-0">Dashboard</h5>
           </div>
           <small className="text-white-75">
-            {new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {new Date().toLocaleDateString("es-ES", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
           </small>
         </div>
       </div>
@@ -222,24 +251,52 @@ const articulosNombreMap = useMemo(() => {
               <h6 className="mb-0">Filtrar por Ubicación</h6>
             </div>
             <div className="card-body">
-              <div className="d-flex btn-group flex-wrap" role="group" aria-label="Filtros de ubicación">
-                <button type="button" className={`btn btn-outline-primary ${selectedLocation === 'all' ? 'active' : ''}`} onClick={() => setSelectedLocation('all')}>
+              <div
+                className="d-flex btn-group flex-wrap"
+                role="group"
+                aria-label="Filtros de ubicación"
+              >
+                <button
+                  type="button"
+                  className={`btn btn-outline-primary ${selectedLocation === "all" ? "active" : ""}`}
+                  onClick={() => setSelectedLocation("all")}
+                >
                   Todos
                 </button>
-                <button type="button" className={`btn btn-outline-primary ${selectedLocation === '7020' ? 'active' : ''}`} onClick={() => setSelectedLocation('7020')}>
-                  Barquisimeto Principal 
+                <button
+                  type="button"
+                  className={`btn btn-outline-primary ${selectedLocation === "7020" ? "active" : ""}`}
+                  onClick={() => setSelectedLocation("7020")}
+                >
+                  Barquisimeto Principal
                 </button>
-                <button type="button" className={`btn btn-outline-primary ${selectedLocation === '8010' ? 'active' : ''}`} onClick={() => setSelectedLocation('8010')}>
+                <button
+                  type="button"
+                  className={`btn btn-outline-primary ${selectedLocation === "8010" ? "active" : ""}`}
+                  onClick={() => setSelectedLocation("8010")}
+                >
                   Maracaibo Occidente
                 </button>
-                <button type="button" className={`btn btn-outline-primary ${selectedLocation === '8060' ? 'active' : ''}`} onClick={() => setSelectedLocation('8060')}>
+                <button
+                  type="button"
+                  className={`btn btn-outline-primary ${selectedLocation === "8060" ? "active" : ""}`}
+                  onClick={() => setSelectedLocation("8060")}
+                >
                   Barcelona Oriente
                 </button>
-                <button type="button" className={`btn btn-outline-primary ${selectedLocation === '8070' ? 'active' : ''}`} onClick={() => setSelectedLocation('8070')}>
-                  Santa Cruz Aragua 
+                <button
+                  type="button"
+                  className={`btn btn-outline-primary ${selectedLocation === "8070" ? "active" : ""}`}
+                  onClick={() => setSelectedLocation("8070")}
+                >
+                  Santa Cruz Aragua
                 </button>
-                <button type="button" className={`btn btn-outline-primary ${selectedLocation === '8090' ? 'active' : ''}`} onClick={() => setSelectedLocation('8090')}>
-                  Capital 
+                <button
+                  type="button"
+                  className={`btn btn-outline-primary ${selectedLocation === "8090" ? "active" : ""}`}
+                  onClick={() => setSelectedLocation("8090")}
+                >
+                  Capital
                 </button>
               </div>
             </div>
@@ -250,34 +307,34 @@ const articulosNombreMap = useMemo(() => {
       {/* Tarjetas de métricas */}
       <div className="row mb-4">
         <div className="col-md-3 mb-3">
-          <MetricCard 
-            title="Total Productos" 
-            value={cantidadTotaldeProductos} 
-            icon="📦" 
+          <MetricCard
+            title="Total Productos"
+            value={cantidadTotaldeProductos}
+            icon="📦"
             color="primary"
           />
         </div>
         <div className="col-md-3 mb-3">
-          <MetricCard 
-            title="Stock Disponible" 
-            value={stockTotaldeProductosDisponible} 
-            icon="✅" 
+          <MetricCard
+            title="Stock Disponible"
+            value={stockTotaldeProductosDisponible}
+            icon="✅"
             color="success"
           />
         </div>
         <div className="col-md-3 mb-3">
-          <MetricCard 
-            title="Stock Bajo" 
-            value={stockTotaldeProductosBajo} 
-            icon="⚠️" 
+          <MetricCard
+            title="Stock Bajo"
+            value={stockTotaldeProductosBajo}
+            icon="⚠️"
             color="warning"
           />
         </div>
         <div className="col-md-3 mb-3">
-          <MetricCard 
-            title="Sin Stock" 
-            value={sinStockDeProductos} 
-            icon="❌" 
+          <MetricCard
+            title="Sin Stock"
+            value={sinStockDeProductos}
+            icon="❌"
             color="danger"
           />
         </div>
@@ -305,22 +362,33 @@ const articulosNombreMap = useMemo(() => {
                   </thead>
                   <tbody>
                     {[...solicitudesInventario]
-                      .sort((a, b) => new Date(`${b.fecha_solicitud}`) - new Date(`${a.fecha_solicitud}`))
+                      .sort(
+                        (a, b) =>
+                          new Date(`${b.fecha_solicitud}`) -
+                          new Date(`${a.fecha_solicitud}`),
+                      )
                       .slice(0, 5)
                       .map((item) => (
                         <tr key={item.id}>
                           <td>
-                            {new Date(`${item.fecha_solicitud}`).toLocaleDateString()} {item.hora?.slice(0,5)}
+                            {new Date(
+                              `${item.fecha_solicitud}`,
+                            ).toLocaleDateString()}{" "}
+                            {item.hora?.slice(0, 5)}
                           </td>
-                          <td>{`${item.codigo_vendedor} - ${vendedores.filter((ven)=> ven.co_ven === item.codigo_vendedor).map((ven)=> ven.ven_des)}`}</td>
-                          
+                          <td>{`${item.codigo_vendedor} - ${vendedores.filter((ven) => ven.co_ven === item.codigo_vendedor).map((ven) => ven.ven_des)}`}</td>
+
                           <td>
-                          <td>{`${item.sku_producto} - ${articulosNombreMap[item.sku_producto] || 'Producto no encontrado'}`}</td>
-</td>
+                            <td>{`${item.sku_producto} - ${articulosNombreMap[item.sku_producto] || "Producto no encontrado"}`}</td>
+                          </td>
                           <td>{item.cantidad_solicitada}</td>
                           <td>
-                            <span className={`badge ${item.estado_aprobacion === false ? 'bg-warning text-dark' : 'bg-success'}`}>
-                              {item.estado_aprobacion === false ? 'Pendiente' : 'Procesada'}
+                            <span
+                              className={`badge ${item.estado_aprobacion === false ? "bg-warning text-dark" : "bg-success"}`}
+                            >
+                              {item.estado_aprobacion === false
+                                ? "Pendiente"
+                                : "Procesada"}
                             </span>
                           </td>
                         </tr>
@@ -331,17 +399,17 @@ const articulosNombreMap = useMemo(() => {
             </div>
           </div>
         </div>
-        
-       
       </div>
-      
+
       {/* Gráficos */}
       <div className="row">
         <div className="col-lg-12 mb-4">
           <div className="card shadow-sm">
             <div className="card-header bg-white d-flex align-items-center gap-2">
               <i className="bi bi-graph-up-arrow text-success"></i>
-              <h6 className="mb-0">Artículos con más movimientos (Top 5 vendidos)</h6>
+              <h6 className="mb-0">
+                Artículos con más movimientos (Top 5 vendidos)
+              </h6>
               <div className="ms-auto d-flex align-items-center gap-2">
                 <small className="text-muted">Rango:</small>
                 <select
@@ -359,7 +427,11 @@ const articulosNombreMap = useMemo(() => {
               </div>
             </div>
             <div className="card-body">
-              <SalesChart mode="topItems" items={topItems} orientation="horizontal" />
+              <SalesChart
+                mode="topItems"
+                items={topItems}
+                orientation="horizontal"
+              />
             </div>
           </div>
         </div>
