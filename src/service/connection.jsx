@@ -484,3 +484,16 @@ export const consultarDatosProfit = async ({
     throw error;
   }
 };
+
+export const obtenerClientesConCoordenadas = async () => {
+  try {
+    const response = await api.get("/clientes/con-coordenadas");
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error al obtener clientes con coordenadas:",
+      error.message,
+    );
+    throw error;
+  }
+};

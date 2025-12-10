@@ -158,7 +158,6 @@ const Sidebar = ({ isCollapsed, toggleSidebar, onLogout }) => {
                   <Link
                     style={
                       item.label === "Proveedores" ||
-                      item.label === "Ubicaciones" ||
                       item.label === "Reportes"
                         ? { opacity: 0.4 }
                         : {}
