@@ -3,7 +3,7 @@ import { deleteToken, deleteTokenRefresh, getToken } from "./authSesion";
 
 const api = axios.create({
   baseURL: "https://fritz-api-rest.fritzvzla.com/api/v1",
-  // baseURL: 'http://localhost:3000/api/v1',
+  // baseURL: "http://localhost:3000/api/v1",
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",

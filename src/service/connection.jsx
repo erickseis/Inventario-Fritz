@@ -461,3 +461,26 @@ export const obtenerHistorialItemControl = async (itemId) => {
     throw error;
   }
 };
+
+export const consultarDatosProfit = async ({
+  fecha_inicio,
+  fecha_fin,
+  co_art,
+}) => {
+  try {
+    const params = new URLSearchParams({
+      fecha_inicio,
+      fecha_fin,
+    });
+    if (co_art) {
+      params.append("co_art", co_art);
+    }
+    const response = await api.get(
+      `/control-interno/consultar-profit?${params}`,
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error al consultar datos de Profit:", error.message);
+    throw error;
+  }
+};

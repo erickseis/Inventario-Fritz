@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ajustarItemControl,
+  consultarDatosProfit,
   crearItemControl,
   crearListaControl,
   obtenerHistorialItemControl,
@@ -21,89 +22,15 @@ const formatDate = (value) => {
 
 const formatNumber = (value) => Number(value || 0).toLocaleString("es-VE");
 
-const demoLists = [
-  {
-    id: 1,
-    nombre: "Transporte ABC-123",
-    referencia: "Guía 2025-10-15",
-    fecha: "2025-10-15",
-    total_meta: 400,
-    total_cargada: 0,
-    total_items: 3,
-    items_completados: 0,
-    items: [
-      {
-        id: 11,
-        nombre: "Cajas de Electrónicos",
-        cantidad_meta: 200,
-        cantidad_cargada: 0,
-      },
-      {
-        id: 12,
-        nombre: "Paquetes de Ropa",
-        cantidad_meta: 150,
-        cantidad_cargada: 0,
-      },
-      {
-        id: 13,
-        nombre: "Muebles de Oficina",
-        cantidad_meta: 50,
-        cantidad_cargada: 0,
-      },
-    ],
-  },
-  {
-    id: 2,
-    nombre: "Transporte XYZ-789",
-    referencia: "Guía 2025-10-16",
-    fecha: "2025-10-16",
-    total_meta: 260,
-    total_cargada: 60,
-    total_items: 3,
-    items_completados: 0,
-    items: [
-      {
-        id: 21,
-        nombre: "Contenedores Plásticos",
-        cantidad_meta: 80,
-        cantidad_cargada: 20,
-      },
-      {
-        id: 22,
-        nombre: "Manual de Usuario",
-        cantidad_meta: 120,
-        cantidad_cargada: 40,
-      },
-      {
-        id: 23,
-        nombre: "Pallets de Exhibición",
-        cantidad_meta: 60,
-        cantidad_cargada: 0,
-      },
-    ],
-  },
-];
-
-const defaultListForm = () => ({
-  nombre: "",
-  fecha: new Date().toISOString().slice(0, 10),
-  referencia: "",
-});
-
-const defaultItemForm = () => ({
-  nombre: "",
-  cantidad_meta: 0,
-});
-
 const Modal = ({ title, show, onClose, footer, children }) => {
   if (!show) return null;
   return (
     <div
       className="modal-backdrop fade show"
-      style={{ display: "block", backgroundColor: "rgba(0, 0, 0)" }}
+      style={{ display: "block", backgroundColor: "rgba(0, 0, 0, 0.5)" }}
     >
       <div className="modal d-block" tabIndex="-1" role="dialog">
-        <div className="modal-dialog modal-dialog-centered">
+        <div className="modal-dialog modal-dialog-centered modal-lg">
           <div
             className="modal-content"
             style={{ backgroundColor: "#ffffff", color: "#212529" }}
@@ -123,7 +50,7 @@ const Modal = ({ title, show, onClose, footer, children }) => {
                 className="btn-close"
                 onClick={onClose}
                 aria-label="Cerrar"
-              ></button>
+              />
             </div>
             <div
               className="modal-body"
@@ -150,45 +77,36 @@ const Modal = ({ title, show, onClose, footer, children }) => {
 };
 
 const ControlInterno = () => {
-  const [demoMode, setDemoMode] = useState(false);
   const [lists, setLists] = useState([]);
   const [selectedListId, setSelectedListId] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const [inputValues, setInputValues] = useState({});
   const [historyMap, setHistoryMap] = useState({});
   const [historyLoading, setHistoryLoading] = useState({});
-  const [demoHistory, setDemoHistory] = useState({}); // Historial simulado para demo
 
-  const [showListModal, setShowListModal] = useState(false);
+  // Modal para consultar datos de Profit
+  const [showConsultaModal, setShowConsultaModal] = useState(false);
+  const [consultaForm, setConsultaForm] = useState({
+    fecha_inicio: "",
+    fecha_fin: "",
+    co_art: "",
+  });
+  const [consultando, setConsultando] = useState(false);
+  const [datosConsultados, setDatosConsultados] = useState(null);
+  const [yaConsultado, setYaConsultado] = useState(false);
+
+  // Modal para crear ítem manual
   const [showItemModal, setShowItemModal] = useState(false);
-  const [listForm, setListForm] = useState(defaultListForm);
-  const [itemForm, setItemForm] = useState(defaultItemForm());
+  const [itemForm, setItemForm] = useState({
+    nombre: "",
+    cantidad_meta: 0,
+  });
   const [saving, setSaving] = useState(false);
-  const [nextDemoId, setNextDemoId] = useState(100); // Para generar IDs únicos en demo
 
   const fetchLists = useCallback(
     async (listIdToSelect = null) => {
-      if (demoMode) {
-        // Usar las listas actuales del estado si ya hay modificaciones, o las demo iniciales
-        setLists((prev) => {
-          const currentLists = prev.length === 0 ? demoLists : prev;
-          if (listIdToSelect) {
-            setSelectedListId(listIdToSelect);
-          } else if (
-            !selectedListId ||
-            !currentLists.some((l) => l.id === selectedListId)
-          ) {
-            setSelectedListId(currentLists[0]?.id ?? demoLists[0]?.id ?? null);
-          }
-          return currentLists;
-        });
-        setLoading(false);
-        setError(null);
-        return;
-      }
-
       setLoading(true);
       setError(null);
       try {
@@ -211,7 +129,7 @@ const ControlInterno = () => {
         setLoading(false);
       }
     },
-    [demoMode, selectedListId],
+    [selectedListId],
   );
 
   useEffect(() => {
@@ -226,7 +144,7 @@ const ControlInterno = () => {
   const handleInputChange = (itemId, value) => {
     const numeric = value.replace(/[^0-9]/g, "");
     const clamped =
-      numeric === "" ? "" : Math.min(999999, parseInt(numeric, 10));
+      numeric === "" ? "" : Math.min(999999, Number.parseInt(numeric, 10));
     setInputValues((prev) => ({
       ...prev,
       [itemId]: clamped === "" ? "" : String(clamped),
@@ -234,52 +152,6 @@ const ControlInterno = () => {
   };
 
   const handleAdjust = async (itemId, action) => {
-    if (demoMode) {
-      const quantity = Math.max(1, Number(inputValues[itemId] ?? 1));
-      setLists((prevLists) =>
-        prevLists.map((list) => {
-          if (list.id !== selectedListId) return list;
-          return {
-            ...list,
-            items: list.items.map((item) => {
-              if (item.id !== itemId) return item;
-              const delta = action === "add" ? quantity : -quantity;
-              const nuevaCantidad = Math.max(
-                0,
-                Math.min(item.cantidad_meta, item.cantidad_cargada + delta),
-              );
-              const updatedItem = { ...item, cantidad_cargada: nuevaCantidad };
-
-              // Actualizar historial demo
-              setDemoHistory((prev) => {
-                const itemHistory = prev[itemId] || [];
-                return {
-                  ...prev,
-                  [itemId]: [
-                    ...itemHistory,
-                    {
-                      id: Date.now(),
-                      tipo: action,
-                      cantidad: quantity,
-                      fecha_evento: new Date().toISOString(),
-                    },
-                  ],
-                };
-              });
-
-              return updatedItem;
-            }),
-          };
-        }),
-      );
-      setInputValues((prev) => ({ ...prev, [itemId]: "1" }));
-      setHistoryMap((prev) => {
-        const next = { ...prev };
-        delete next[itemId];
-        return next;
-      });
-      return;
-    }
     try {
       const quantity = Math.max(1, Number(inputValues[itemId] ?? 1));
       await ajustarItemControl(itemId, { action, quantity });
@@ -300,48 +172,6 @@ const ControlInterno = () => {
     if (!window.confirm("¿Deseas reiniciar el total cargado de este ítem?"))
       return;
 
-    if (demoMode) {
-      setLists((prevLists) =>
-        prevLists.map((list) => {
-          if (list.id !== selectedListId) return list;
-          return {
-            ...list,
-            items: list.items.map((item) => {
-              if (item.id !== itemId) return item;
-              const cantidadReset = item.cantidad_cargada;
-
-              // Actualizar historial demo
-              if (cantidadReset > 0) {
-                setDemoHistory((prev) => {
-                  const itemHistory = prev[itemId] || [];
-                  return {
-                    ...prev,
-                    [itemId]: [
-                      ...itemHistory,
-                      {
-                        id: Date.now(),
-                        tipo: "reset",
-                        cantidad: cantidadReset,
-                        fecha_evento: new Date().toISOString(),
-                      },
-                    ],
-                  };
-                });
-              }
-
-              return { ...item, cantidad_cargada: 0 };
-            }),
-          };
-        }),
-      );
-      setHistoryMap((prev) => {
-        const next = { ...prev };
-        delete next[itemId];
-        return next;
-      });
-      return;
-    }
-
     try {
       await resetearItemControl(itemId);
       await fetchLists(selectedListId);
@@ -357,16 +187,6 @@ const ControlInterno = () => {
   };
 
   const loadHistory = async (itemId) => {
-    if (demoMode) {
-      setHistoryLoading((prev) => ({ ...prev, [itemId]: true }));
-      // Simular carga
-      setTimeout(() => {
-        const history = demoHistory[itemId] || [];
-        setHistoryMap((prev) => ({ ...prev, [itemId]: history }));
-        setHistoryLoading((prev) => ({ ...prev, [itemId]: false }));
-      }, 300);
-      return;
-    }
     setHistoryLoading((prev) => ({ ...prev, [itemId]: true }));
     try {
       const history = await obtenerHistorialItemControl(itemId);
@@ -413,49 +233,116 @@ const ControlInterno = () => {
     return { text: "Pendiente", className: "bg-warning text-dark" };
   };
 
-  const handleCreateList = async (e) => {
+  const handleConsultarProfit = async (e) => {
     e.preventDefault();
-    const payload = {
-      nombre: listForm.nombre.trim(),
-      fecha: listForm.fecha,
-      referencia: listForm.referencia.trim() || null,
-    };
-    if (!payload.nombre) {
-      alert("El nombre es obligatorio.");
+
+    if (!consultaForm.fecha_inicio || !consultaForm.fecha_fin) {
+      alert("Por favor ingrese las fechas de inicio y fin.");
       return;
     }
 
-    if (demoMode) {
-      const newList = {
-        id: nextDemoId,
-        nombre: payload.nombre,
-        referencia: payload.referencia || "",
-        fecha: payload.fecha,
-        total_meta: 0,
-        total_cargada: 0,
-        total_items: 0,
-        items_completados: 0,
-        items: [],
-      };
-      setNextDemoId((prev) => prev + 1);
-      setLists((prev) => [...prev, newList]);
-      setShowListModal(false);
-      setListForm(defaultListForm());
-      setSelectedListId(newList.id);
-      return;
-    }
-
-    setSaving(true);
+    setConsultando(true);
     try {
-      const newList = await crearListaControl(payload);
-      setShowListModal(false);
-      setListForm(defaultListForm());
-      await fetchLists(newList.id);
+      // Convertir fechas YYYY-MM-DD a YYYYMMDD
+      const fechaInicio = consultaForm.fecha_inicio.replace(/-/g, "");
+      const fechaFin = consultaForm.fecha_fin.replace(/-/g, "");
+
+      const datos = await consultarDatosProfit({
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
+        co_art: consultaForm.co_art.trim() || null,
+      });
+
+      setDatosConsultados(datos);
+      setYaConsultado(true);
+      setShowConsultaModal(false);
+
+      // Agrupar por factura para crear las listas
+      const facturas = agruparPorFactura(datos);
+      if (facturas.length > 0) {
+        alert(
+          `Se encontraron ${facturas.length} transportes. Haz clic en "Cerrar Guía" para guardar.`,
+        );
+      } else {
+        alert("No se encontraron datos para el rango de fechas seleccionado.");
+      }
     } catch (err) {
       console.error(err);
-      alert("No se pudo crear la lista.");
+      alert("Error al consultar los datos. Intente nuevamente.");
     } finally {
-      setSaving(false);
+      setConsultando(false);
+    }
+  };
+
+  const agruparPorFactura = (datos) => {
+    const facturaMap = new Map();
+
+    for (const row of datos) {
+      const key = row.fact_num;
+      if (!facturaMap.has(key)) {
+        facturaMap.set(key, {
+          fact_num: row.fact_num,
+          fec_emis: row.fec_emis,
+          co_cli: row.co_cli,
+          co_alma: row.co_alma,
+          items: [],
+        });
+      }
+      const factura = facturaMap.get(key);
+      factura.items.push({
+        co_art: row.co_art,
+        art_des: row.art_des,
+        tot_art: Number(row.tot_art || 0),
+        uni_venta: row.uni_venta,
+      });
+    }
+
+    return Array.from(facturaMap.values());
+  };
+
+  const handleCerrarGuia = async () => {
+    if (!datosConsultados || datosConsultados.length === 0) {
+      alert("No hay datos para cerrar.");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "¿Desea crear las listas de carga con los datos consultados?",
+      )
+    )
+      return;
+
+    try {
+      const facturas = agruparPorFactura(datosConsultados);
+
+      for (const factura of facturas) {
+        // Crear lista de carga
+        const newList = await crearListaControl({
+          nombre: `Transporte ${factura.fact_num}`,
+          fecha: factura.fec_emis
+            ? new Date(factura.fec_emis).toISOString().slice(0, 10)
+            : new Date().toISOString().slice(0, 10),
+          referencia: `Guía ${factura.fec_emis || ""} | Cliente: ${factura.co_cli} | Almacén: ${factura.co_alma}`,
+        });
+
+        // Crear items para cada artículo
+        for (const item of factura.items) {
+          await crearItemControl(newList.id, {
+            nombre: `${item.art_des} (${item.co_art})`,
+            cantidad_meta: Math.round(item.tot_art),
+          });
+        }
+      }
+
+      alert(`Se crearon ${facturas.length} listas de carga exitosamente.`);
+      setDatosConsultados(null);
+      setYaConsultado(false);
+      setConsultaForm({ fecha_inicio: "", fecha_fin: "", co_art: "" });
+      await fetchLists();
+    } catch (err) {
+      console.error(err);
+      alert("Error al crear las listas. Intente nuevamente.");
     }
   };
 
@@ -465,34 +352,13 @@ const ControlInterno = () => {
 
     const payload = {
       nombre: itemForm.nombre.trim(),
-      cantidad_meta: Math.max(0, parseInt(itemForm.cantidad_meta, 10) || 0),
+      cantidad_meta: Math.max(
+        0,
+        Number.parseInt(itemForm.cantidad_meta, 10) || 0,
+      ),
     };
     if (!payload.nombre) {
       alert("El nombre del ítem es obligatorio.");
-      return;
-    }
-
-    if (demoMode) {
-      const newItem = {
-        id: nextDemoId,
-        nombre: payload.nombre,
-        cantidad_meta: payload.cantidad_meta,
-        cantidad_cargada: 0,
-      };
-      setNextDemoId((prev) => prev + 1);
-      setLists((prev) =>
-        prev.map((list) => {
-          if (list.id !== selectedListId) return list;
-          return {
-            ...list,
-            items: [...list.items, newItem],
-            total_meta: list.total_meta + payload.cantidad_meta,
-            total_items: list.items.length + 1,
-          };
-        }),
-      );
-      setShowItemModal(false);
-      setItemForm(defaultItemForm());
       return;
     }
 
@@ -500,7 +366,7 @@ const ControlInterno = () => {
     try {
       await crearItemControl(selectedListId, payload);
       setShowItemModal(false);
-      setItemForm(defaultItemForm());
+      setItemForm({ nombre: "", cantidad_meta: 0 });
       await fetchLists(selectedListId);
     } catch (err) {
       console.error(err);
@@ -518,7 +384,33 @@ const ControlInterno = () => {
         minHeight: "calc(100vh - 120px)",
       }}
     >
+      {/* Header con botones */}
+      <div className="mb-3">
+        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <h4 className="mb-0 text-dark fw-bold">Control Interno</h4>
+          <div className="d-flex gap-2">
+            {yaConsultado && datosConsultados && (
+              <button
+                className="btn btn-success btn-sm fw-semibold"
+                onClick={handleCerrarGuia}
+              >
+                <i className="bi bi-check-circle me-1" />
+                Cerrar Guía
+              </button>
+            )}
+            <button
+              className="btn btn-primary btn-sm fw-semibold"
+              onClick={() => setShowConsultaModal(true)}
+            >
+              <i className="bi bi-search me-1" />
+              {yaConsultado ? "Nueva Consulta" : "Consultar Datos"}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="d-flex flex-column flex-lg-row gap-3">
+        {/* Lista de transportes */}
         <div
           className="flex-shrink-0"
           style={{ minWidth: "300px", maxWidth: "340px" }}
@@ -532,41 +424,12 @@ const ControlInterno = () => {
             }}
           >
             <div
-              className="card-header d-flex justify-content-between align-items-center text-white"
+              className="card-header text-white"
               style={{
                 background: "linear-gradient(135deg, #0d6efd 0%, #6610f2 100%)",
               }}
             >
               <span className="fw-semibold">Listas de Carga</span>
-              <div className="d-flex gap-2">
-                <button
-                  className={`btn btn-sm fw-semibold ${demoMode ? "btn-warning" : "btn-outline-light"}`}
-                  onClick={() => {
-                    const newDemoMode = !demoMode;
-                    setDemoMode(newDemoMode);
-                    setHistoryMap({});
-                    setHistoryLoading({});
-                    setInputValues({});
-                    setDemoHistory({});
-                    if (newDemoMode) {
-                      // Al activar demo, inicializar con las listas demo
-                      setLists(demoLists);
-                      setSelectedListId(demoLists[0]?.id ?? null);
-                      setNextDemoId(100);
-                    }
-                  }}
-                >
-                  {demoMode ? "Modo Demo" : "Usar Demo"}
-                </button>
-                <button
-                  className="btn btn-sm btn-light fw-semibold"
-                  onClick={() => {
-                    setShowListModal(true);
-                  }}
-                >
-                  Agregar
-                </button>
-              </div>
             </div>
             <div className="card-body p-0">
               {loading ? (
@@ -575,7 +438,7 @@ const ControlInterno = () => {
                 <div className="p-3 text-center text-danger">{error}</div>
               ) : lists.length === 0 ? (
                 <div className="p-3 text-center text-muted">
-                  Aún no hay listas. Crea la primera para comenzar.
+                  Aún no hay listas. Consulta datos para comenzar.
                 </div>
               ) : (
                 <ul className="list-group list-group-flush">
@@ -638,10 +501,12 @@ const ControlInterno = () => {
           </div>
         </div>
 
+        {/* Detalles de la lista seleccionada */}
         <div className="flex-grow-1">
           {!selectedList ? (
             <div className="alert alert-info shadow-sm">
-              Selecciona una lista de carga o crea una nueva para comenzar.
+              Selecciona una lista de carga o consulta nuevos datos para
+              comenzar.
             </div>
           ) : (
             <div
@@ -676,7 +541,7 @@ const ControlInterno = () => {
                     setShowItemModal(true);
                   }}
                 >
-                  <i className="bi bi-plus-circle me-1"></i>
+                  <i className="bi bi-plus-circle me-1" />
                   Agregar ítem
                 </button>
               </div>
@@ -690,9 +555,8 @@ const ControlInterno = () => {
               >
                 {selectedList.items.length === 0 ? (
                   <div className="text-center text-muted py-5">
-                    <i className="bi bi-archive fs-1 d-block mb-2"></i>
-                    Aún no hay ítems en esta lista. Utiliza “Agregar ítem” para
-                    comenzar.
+                    <i className="bi bi-archive fs-1 d-block mb-2" />
+                    Aún no hay ítems en esta lista.
                   </div>
                 ) : (
                   <div className="vstack gap-3">
@@ -754,7 +618,7 @@ const ControlInterno = () => {
                                   </span>
                                 </div>
                                 <div className="text-muted small mt-1">
-                                  Meta:{" "}
+                                  Total a Cargar:{" "}
                                   <strong>
                                     {formatNumber(item.cantidad_meta)}
                                   </strong>{" "}
@@ -786,7 +650,7 @@ const ControlInterno = () => {
                                     className="btn btn-sm btn-primary fw-semibold"
                                     onClick={() => handleAdjust(item.id, "add")}
                                   >
-                                    <i className="bi bi-plus-lg me-1"></i>
+                                    <i className="bi bi-plus-lg me-1" />
                                     Agregar
                                   </button>
                                   <button
@@ -795,14 +659,15 @@ const ControlInterno = () => {
                                       handleAdjust(item.id, "subtract")
                                     }
                                   >
-                                    <i className="bi bi-dash-lg me-1"></i>Restar
+                                    <i className="bi bi-dash-lg me-1" />
+                                    Restar
                                   </button>
                                 </div>
                                 <button
                                   className="btn btn-sm btn-outline-secondary fw-semibold"
                                   onClick={() => toggleHistory(item.id)}
                                 >
-                                  <i className="bi bi-clock-history me-1"></i>
+                                  <i className="bi bi-clock-history me-1" />
                                   Historial
                                 </button>
                                 <button
@@ -866,80 +731,103 @@ const ControlInterno = () => {
         </div>
       </div>
 
+      {/* Modal de consulta */}
       <Modal
-        title="Nueva lista de carga"
-        show={showListModal}
+        title="Consultar Datos de Profit"
+        show={showConsultaModal}
         onClose={() => {
-          if (!saving) {
-            setShowListModal(false);
-            setListForm(defaultListForm());
+          if (!consultando) {
+            setShowConsultaModal(false);
           }
         }}
         footer={
           <>
             <button
               className="btn btn-outline-secondary"
-              onClick={() => setShowListModal(false)}
-              disabled={saving}
+              onClick={() => setShowConsultaModal(false)}
+              disabled={consultando}
             >
               Cancelar
             </button>
             <button
               className="btn btn-primary"
-              onClick={handleCreateList}
-              disabled={saving}
+              onClick={handleConsultarProfit}
+              disabled={consultando}
             >
-              {saving ? "Guardando..." : "Guardar"}
+              {consultando ? "Consultando..." : "Consultar"}
             </button>
           </>
         }
       >
-        <form onSubmit={handleCreateList}>
-          <div className="mb-3">
-            <label className="form-label">Nombre</label>
-            <input
-              type="text"
-              className="form-control"
-              value={listForm.nombre}
-              onChange={(e) =>
-                setListForm((prev) => ({ ...prev, nombre: e.target.value }))
-              }
-              required
-            />
+        <form onSubmit={handleConsultarProfit}>
+          <div className="alert alert-info small mb-3">
+            <i className="bi bi-info-circle me-2" />
+            Ingrese el rango de fechas para consultar los datos de transportes y
+            artículos desde Profit Plus.
           </div>
-          <div className="mb-3">
-            <label className="form-label">Fecha</label>
-            <input
-              type="date"
-              className="form-control"
-              value={listForm.fecha}
-              onChange={(e) =>
-                setListForm((prev) => ({ ...prev, fecha: e.target.value }))
-              }
-              required
-            />
-          </div>
-          <div className="mb-0">
-            <label className="form-label">Referencia / Nota</label>
-            <textarea
-              className="form-control"
-              value={listForm.referencia}
-              onChange={(e) =>
-                setListForm((prev) => ({ ...prev, referencia: e.target.value }))
-              }
-              rows={2}
-            />
+          <div className="row g-3">
+            <div className="col-md-6">
+              <label className="form-label">Fecha Inicio</label>
+              <input
+                type="date"
+                className="form-control"
+                value={consultaForm.fecha_inicio}
+                onChange={(e) =>
+                  setConsultaForm((prev) => ({
+                    ...prev,
+                    fecha_inicio: e.target.value,
+                  }))
+                }
+                required
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label">Fecha Fin</label>
+              <input
+                type="date"
+                className="form-control"
+                value={consultaForm.fecha_fin}
+                onChange={(e) =>
+                  setConsultaForm((prev) => ({
+                    ...prev,
+                    fecha_fin: e.target.value,
+                  }))
+                }
+                required
+              />
+            </div>
+            <div className="col-12">
+              <label className="form-label">
+                Código de Artículo (opcional)
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                value={consultaForm.co_art}
+                onChange={(e) =>
+                  setConsultaForm((prev) => ({
+                    ...prev,
+                    co_art: e.target.value.toUpperCase(),
+                  }))
+                }
+                placeholder="Ej: VEAZAD03"
+              />
+              <small className="text-muted">
+                Deje en blanco para consultar todos los artículos.
+              </small>
+            </div>
           </div>
         </form>
       </Modal>
 
+      {/* Modal para agregar ítem manual */}
       <Modal
         title="Nuevo ítem"
         show={showItemModal}
         onClose={() => {
           if (!saving) {
             setShowItemModal(false);
-            setItemForm(defaultItemForm());
+            setItemForm({ nombre: "", cantidad_meta: 0 });
           }
         }}
         footer={
